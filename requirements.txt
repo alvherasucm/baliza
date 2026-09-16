@@ -5,3 +5,4 @@ scipy==1.16.3
 scikit-learn==1.9.0
 joblib==1.6.0
 catboost==1.2.10
+plotly==7.1.0

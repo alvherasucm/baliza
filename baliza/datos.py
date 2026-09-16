@@ -33,6 +33,33 @@ TIPO_VIA_MODELO = {
     "Convencional": "Convencional",
 }
 
+# Las categorias que entiende el modelo son mas amplias que las descripciones
+# administrativas de la tabla maestra. La interfaz usa estos tres nombres para
+# no presentar como clases distintas variantes que el modelo trata igual.
+TIPO_VIA_PRESENTACION = {
+    "Autopista_autovia": "Autopista o autovía",
+    "Multicarril": "Vía multicarril",
+    "Convencional": "Carretera convencional",
+}
+
+# Codigo provincial del INE, usado para enlazar los indicadores del proyecto
+# con la geometria del mapa. El enlace por codigo evita problemas con nombres
+# bilingues como Araba/Alava o Alacant/Alicante.
+CODIGO_PROVINCIA = {
+    "Álava": "01", "Albacete": "02", "Alicante": "03", "Almería": "04",
+    "Ávila": "05", "Badajoz": "06", "Barcelona": "08", "Burgos": "09",
+    "Cáceres": "10", "Cádiz": "11", "Castellón": "12", "Ciudad Real": "13",
+    "Córdoba": "14", "A Coruña": "15", "Cuenca": "16", "Girona": "17",
+    "Granada": "18", "Guadalajara": "19", "Huelva": "21", "Huesca": "22",
+    "Jaén": "23", "León": "24", "Lleida": "25", "La Rioja": "26",
+    "Lugo": "27", "Madrid": "28", "Málaga": "29", "Murcia": "30",
+    "Navarra": "31", "Ourense": "32", "Asturias": "33", "Palencia": "34",
+    "Pontevedra": "36", "Salamanca": "37", "Cantabria": "39", "Segovia": "40",
+    "Sevilla": "41", "Soria": "42", "Tarragona": "43", "Teruel": "44",
+    "Toledo": "45", "Valencia": "46", "Valladolid": "47", "Bizkaia": "48",
+    "Zamora": "49", "Zaragoza": "50",
+}
+
 
 @st.cache_data(show_spinner=False)
 def tramos_puntuados() -> pd.DataFrame:
@@ -49,6 +76,10 @@ def tramos_puntuados() -> pd.DataFrame:
         on="clave", how="left")
     df["longitud_km"] = df.pk_fin_km - df.pk_inicio_km
     df["acc_por_km"] = df.N_ACC / df.longitud_km.replace(0, np.nan)
+    df["tipo_via_presentacion"] = (
+        df["tipo_via"].map(TIPO_VIA_PRESENTACION).fillna("Tipo de vía no disponible")
+    )
+    df["tipo_via_detalle"] = df["TIPO_VIA"]
     df["banda"] = banda_riesgo(df.PROB_ACCIDENTE_TRAMO_ANIO)
     df["percentil"] = percentil_2024(df.PROB_ACCIDENTE_TRAMO_ANIO)
     return df
@@ -94,6 +125,13 @@ def metadata_gravedad() -> dict:
 @st.cache_data(show_spinner=False)
 def metricas_gravedad() -> dict:
     return json.loads((DATOS / "metricas_test_2024.json").read_text(encoding="utf-8"))
+
+
+@st.cache_data(show_spinner=False)
+def geometria_provincias() -> dict:
+    """Limites provinciales para el coropletico, incluidos en el repositorio
+    para que la presentacion no dependa de una conexion a Internet."""
+    return json.loads((DATOS / "provincias_espana.geojson").read_text(encoding="utf-8"))
 
 
 @st.cache_resource(show_spinner="Cargando el modelo de tramos...")

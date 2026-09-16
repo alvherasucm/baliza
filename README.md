@@ -17,14 +17,18 @@ streamlit run app.py
 ## Estructura
 
 ```
-app.py                      navegación y entrada
-paginas/                    las ocho pantallas, una por fichero
-baliza/datos.py             carga cacheada de datos y modelos
-baliza/estilo.py            marca, escala de riesgo y piezas comunes
+app.py                      entrada: tema, estilos, logotipo y menú superior (desde estilo.PAGINAS)
+paginas/                    las nueve pantallas, una por fichero
+baliza/datos.py             carga cacheada de datos y modelos (lógica, sin nada visual)
+baliza/estilo.py            valores de diseño para Python, formato español y temas de gráficos
+baliza/estilos.css          sistema visual: variables --bz-* y clases de los componentes
+baliza/componentes.py       componentes de interfaz reutilizables
 baliza/PrediccionTramos.py  inferencia del modelo de tramos (Anna)
 baliza/validador_entrada.py validación de entradas de usuario (Jose)
 datos/                      tablas y contratos de los tres modelos
 modelos/                    modelo_final.joblib y modelo_gravedad.cbm
+static/fuentes/             tipografía Inter servida por la propia app (licencia OFL)
+static/marca/               logotipo e icono en SVG
 pruebas/                    integración de los modelos y arranque de las páginas
 ```
 
@@ -48,7 +52,8 @@ las pruebas de integración.
 - **Nada de conteos absolutos como titular.** Tasa por 100 millones de vehículos-kilómetro,
   índice con media nacional igual a 100, o categorías de riesgo. Un número absoluto es
   indefendible porque el universo es parcial.
-- **El color nunca va solo.** La escala amarillo-rojo lleva siempre la etiqueta de texto.
+- **El color nunca va solo.** Los niveles de riesgo usan una sola gama, de terracota a
+  granate, y llevan siempre la etiqueta de texto.
 - **Cada pantalla que da un número** lleva al lado qué haría cualquiera a ojo, qué dice el
   modelo y cuánto se equivoca cada uno.
 - **El score de gravedad no está calibrado**: se enseña como puesto frente a los 101.996
@@ -64,3 +69,36 @@ las pruebas de integración.
 `scores_test_2024.csv`, `labels_categorias.json` y `feature_importance.json`. Si llega
 `datos/caso_default_2024_carretera.json`, la pantalla lo usa como caso de referencia sin
 tocar código; mientras no exista, se usa el caso urbano trasladado a autovía.
+
+## Diseño
+
+Capas separadas: `datos.py` (datos y modelos) → `componentes.py` (interfaz) → `paginas/`.
+Las páginas no escriben colores, CSS ni HTML: componen con los componentes.
+
+| Componente | Uso |
+|---|---|
+| `cabecera_pagina` | antetítulo, título, propósito y datos de contexto reales |
+| `cabecera_seccion` | título de bloque con descripción opcional |
+| `tarjeta_cifra`, `tarjeta_destacada`, `pila`, `rejilla` | cifras clave |
+| `conclusiones` | insights numerados; la metodología va en un desplegable |
+| `etiqueta_riesgo` | nivel de riesgo, siempre con texto |
+| `filtros`, `panel`, `contenedor_grafico` | superficies para controles, gráficos y mapas |
+| `tabla`, `columna` | tabla de producto con números alineados y etiquetas |
+| `panel_info`, `en_desarrollo`, `estado_vacio` | contexto, trabajo pendiente y estados vacíos |
+
+- Valores de diseño en un solo sitio: variables `--bz-*` de `estilos.css` (colores,
+  espaciado 4/8/12/16/24/32/48/64, radios, sombras y tipografía) y `.streamlit/config.toml`.
+- Fondo en capas (`#F3F2EE` → `#F8F7F4` → blanco), acento azul petróleo `#0F3D4C`.
+- Niveles de riesgo: `#D9A88C` → `#C27A5C` → `#9D4A34` → `#6B2118`, validados como escala
+  ordinal. Índices con media 100: petróleo por debajo, terracota por encima.
+- Menú superior nativo (`st.navigation(position="top")`). El mapa provincial es 2D: con
+  altura, unas provincias taparían a otras y la altura repetiría lo que ya dice el color.
+- CSS con clases propias; los únicos ganchos de Streamlit son la cabecera, el contenedor
+  principal y las clases `st-key-*` de los contenedores con clave.
+
+## Tramos (Anna)
+
+Las páginas «Tu ruta», «Riesgo por tramo», «Mapa provincial» y «Flotas» siguen las
+decisiones de `README_CAMBIOS.md` de Anna: tipos de vía con las tres categorías del modelo,
+probabilidad anual en porcentaje, filtros del ranking, mapa lineal y coroplético
+provincial. Cualquier cambio de lógica en estas páginas se consulta con ella antes.

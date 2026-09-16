@@ -1,16 +1,12 @@
 """08 Flotas. Demostrar que hay alguien dispuesto a pagar por esto y que el
 modelo es consumible desde fuera. El coste por parte lo pone el cliente: asi no
-inventamos ninguna cifra economica."""
+inventamos ninguna cifra economica. La prediccion y los porcentajes siguen las
+decisiones de Anna; aqui solo cambia la presentacion."""
 import pandas as pd
 import streamlit as st
 
+from baliza import componentes as ui
 from baliza import datos, estilo
-
-estilo.cabecera(st.session_state["paginas"])
-
-st.subheader("Flotas")
-st.caption("Sube tus rutas habituales con cuántas veces por semana las haces. "
-           "Riesgo por frecuencia, ordenado por exposición real.")
 
 PLANTILLA = pd.DataFrame([
     {"provincia": "Madrid", "carretera": "A-4", "pk_inicio": 4.0, "pk_fin": 10.0,
@@ -24,13 +20,21 @@ PLANTILLA = pd.DataFrame([
      "viajes_semana": 2},
 ])
 
-izquierda, derecha = st.columns([3, 1])
-with izquierda:
-    subido = st.file_uploader("Tu tabla de rutas (CSV)", type=["csv"])
-with derecha:
-    st.download_button("Descargar plantilla", PLANTILLA.to_csv(index=False).encode("utf-8"),
-                       "plantilla_rutas.csv", "text/csv", width="stretch")
-    coste = st.number_input("Coste medio por parte (€)", 0, 100_000, 1_200, step=100,
+ui.cabecera_pagina(
+    "Flotas",
+    "Puntúa las rutas de tu flota",
+    "Sube tus rutas habituales con cuántas veces por semana las haces. Baliza las ordena por "
+    "exposición real: riesgo del tramo por frecuencia de paso.",
+    meta=[("Formato", "CSV"), ("Modelo", f"tramos {datos.ANIO}"), ("Tamaño máximo", "5 MB")],
+)
+
+with ui.filtros("panel_carga"):
+    c1, c2, c3 = st.columns([3, 1.2, 1.2], gap="medium", vertical_alignment="bottom")
+    subido = c1.file_uploader("Tu tabla de rutas", type=["csv"])
+    c2.download_button("Descargar plantilla", PLANTILLA.to_csv(index=False).encode("utf-8"),
+                       "plantilla_rutas.csv", "text/csv", width="stretch",
+                       icon=":material/download:")
+    coste = c3.number_input("Coste medio por parte (€)", 0, 100_000, 1_200, step=100,
                             help="Lo pones tú. Nosotros no inventamos costes.")
 
 tabla = PLANTILLA.copy()
@@ -38,24 +42,28 @@ if subido is not None:
     try:
         tabla = pd.read_csv(subido, sep=None, engine="python")
     except Exception:
-        st.error("No se ha podido leer el archivo. Usa CSV y conserva los encabezados "
-                 "de la plantilla.")
+        ui.panel_info("No se ha podido leer el archivo. Usa CSV y conserva los encabezados de "
+                      "la plantilla.", aviso=True, etiqueta="Archivo no válido")
         st.stop()
 
+ui.cabecera_seccion("Tus rutas",
+                    "Puedes editar las filas aquí mismo o añadir nuevas antes de calcular." if
+                    subido is None else f"{len(tabla)} filas cargadas de «{subido.name}».")
 tabla = st.data_editor(tabla, num_rows="dynamic", width="stretch", hide_index=True)
 
 if "viajes_semana" not in tabla.columns:
-    st.error("Falta la columna viajes_semana. Descarga la plantilla y conserva sus encabezados.")
+    ui.panel_info("Falta la columna viajes_semana. Descarga la plantilla y conserva sus "
+                  "encabezados.", aviso=True, etiqueta="Falta una columna")
     st.stop()
 
 validacion, prediccion, error = datos.predecir_tramos_usuario(tabla)
 if error:
-    st.error(error)
+    ui.panel_info(error, aviso=True, etiqueta="No se ha podido calcular")
     st.stop()
 for mensaje in validacion.errores:
-    st.error(mensaje)
+    ui.panel_info(mensaje, aviso=True, etiqueta="Revisa esta fila")
 for mensaje in validacion.advertencias:
-    st.warning(mensaje)
+    ui.panel_info(mensaje, etiqueta="Aviso")
 if prediccion is None:
     st.stop()
 
@@ -64,43 +72,46 @@ prediccion["viajes_semana"] = pd.to_numeric(tabla["viajes_semana"], errors="coer
 prediccion["exposicion"] = prediccion.PROB_ACCIDENTE_TRAMO_ANIO * prediccion.viajes_semana
 prediccion = prediccion.sort_values("exposicion", ascending=False)
 
-st.divider()
-a, b, c = st.columns(3)
-a.metric("Rutas analizadas", len(prediccion))
 a_vigilar = int(prediccion.banda.isin(["Alto", "Muy alto"]).sum())
-b.metric("Entre el 20% peor de España", a_vigilar)
-c.metric("Si evitas el peor tramo", f"{prediccion.exposicion.iloc[0] / prediccion.exposicion.sum():.0%}",
-         help="Parte de tu exposición total que concentra esa sola ruta.")
+ui.cabecera_seccion("Resultado", "Ordenado por exposición: riesgo del tramo por viajes a la semana.")
+ui.rejilla([
+    ui.tarjeta_cifra("Rutas analizadas", str(len(prediccion))),
+    ui.tarjeta_cifra("Entre el 20 % peor de España", str(a_vigilar),
+                     unidad=f"de {len(prediccion)}", pie="con nivel alto o muy alto"),
+    ui.tarjeta_cifra("Si evitas la ruta más expuesta",
+                     estilo.pct(prediccion.exposicion.iloc[0] / prediccion.exposicion.sum()),
+                     ayuda="Parte de tu exposición total que concentra esa sola ruta.",
+                     pie="de tu exposición total desaparece"),
+])
 
 vista = prediccion.copy()
 vista["Ruta"] = (vista.carretera + ", km " + vista.pk_inicio_km.round().astype(int).astype(str)
                  + " a " + vista.pk_fin_km.round().astype(int).astype(str))
 vista["Riesgo"] = vista.banda.astype(str)
-vista["Peor que"] = vista.percentil
-st.dataframe(
-    vista[["Ruta", "provincia", "viajes_semana", "PROB_ACCIDENTE_TRAMO_ANIO", "Peor que",
-           "Riesgo", "FUERA_RANGO_TRAIN"]].rename(columns={
-               "provincia": "Provincia", "viajes_semana": "Viajes/semana",
-               "PROB_ACCIDENTE_TRAMO_ANIO": "Riesgo del tramo",
-               "FUERA_RANGO_TRAIN": "Fuera de rango"}),
-    hide_index=True, width="stretch",
-    column_config={
-        "Riesgo del tramo": st.column_config.ProgressColumn(
-            min_value=0, max_value=1, format="%.2f"),
-        "Peor que": st.column_config.NumberColumn(
-            format="%.0f%% de España",
-            help="Percentil del tramo dentro de los 7.248 de 2024. Es el mismo "
-                 "número que devuelve el campo percentil_2024 de la API.")})
+vista["peor_que"] = vista.percentil.map(lambda v: f"{v:.0f} % de España")
+vista["fuera_rango"] = vista.FUERA_RANGO_TRAIN.map({True: "Sí", False: "No"})
+st.write("")
+ui.tabla(vista, [
+    ui.columna("Ruta", "Ruta", "fuerte", secundario="provincia"),
+    ui.columna("viajes_semana", "Viajes/semana", "num"),
+    ui.columna("PROB_ACCIDENTE_TRAMO_ANIO", "Probabilidad anual", "barra", decimales=1, maximo=1),
+    ui.columna("peor_que", "Peor que", "derecha"),
+    ui.columna("Riesgo", "Nivel", "riesgo"),
+    ui.columna("fuera_rango", "Fuera de rango", "suave"),
+], ranking=True)
+st.caption("Probabilidad anual: estimación de que el tramo registre al menos un accidente durante "
+           "el año; no es el riesgo individual de un viaje. «Peor que» es el percentil del tramo "
+           "dentro de los 7.248 de 2024, el mismo número que devuelve el campo percentil_2024 "
+           "de la API.")
 
 if coste:
-    st.caption(f"Con un coste medio de {coste:,} € por parte, cada punto de esta tabla que "
-               f"consigas bajar se traduce en partes que no ocurren. La cifra en euros la "
-               f"pones tú.".replace(",", "."))
+    ui.panel_info(f"Con un coste medio de {estilo.num(coste)} € por parte, cada punto de esta "
+                  "tabla que consigas bajar se traduce en partes que no ocurren. La cifra en "
+                  "euros la pones tú.")
 
-st.divider()
-st.subheader("Pedirlo desde tu sistema")
-st.write("La misma puntuación que ves aquí se pide desde fuera, tramo a tramo, para que un "
-         "motor de rutas la use al calcular un itinerario.")
+ui.cabecera_seccion("Pedirlo desde tu sistema",
+                    "La misma puntuación se pide desde fuera, tramo a tramo, para que un motor de "
+                    "rutas la use al calcular un itinerario.", eyebrow="API")
 st.code("""curl -X POST https://api.baliza.example/predict \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -113,7 +124,5 @@ st.code("""curl -X POST https://api.baliza.example/predict \\
     "proporcion_pesados": 0.14
   }'""", language="bash")
 
-estilo.pendiente(
-    "La URL es de ejemplo. Anna tiene una API en FastAPI funcionando en local; falta el "
-    "código y hospedarla con https para poder enseñarla de verdad."
-)
+ui.en_desarrollo("La dirección de la API es de ejemplo: el servicio funciona en local y falta "
+                 "publicarlo con https.")

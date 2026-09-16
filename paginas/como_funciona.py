@@ -3,11 +3,15 @@ que el oyente pueda repetirlo despues con sus palabras. Lo tecnico va en un
 desplegable: el tribunal son profesores haciendo de perfil de negocio."""
 import streamlit as st
 
+from baliza import componentes as ui
 from baliza import datos, estilo
 
-estilo.cabecera(st.session_state["paginas"])
-
-st.subheader("Cómo funciona")
+ui.cabecera_pagina(
+    "Cómo funciona",
+    "De los datos a una puntuación por tramo",
+    "Cuatro pasos y tres ideas para entender de dónde sale cada número.",
+    meta=[("Modelos", "tramo · provincia · gravedad"), ("Validación", "test 2024")],
+)
 
 pasos = [
     ("Se junta lo que pasó con cuánta gente pasó",
@@ -24,11 +28,9 @@ pasos = [
      "Y esa puntuación se puede pedir desde fuera, tramo a tramo, para que otro sistema la "
      "use al calcular una ruta."),
 ]
-for i, (titulo, texto) in enumerate(pasos, start=1):
-    st.markdown(f"**{i}. {titulo}**  \n{texto}")
+ui.conclusiones(pasos, titulo="Cuatro pasos", eyebrow="El proceso", columnas=2)
 
-st.divider()
-st.markdown("**Tres cosas que conviene entender**")
+ui.cabecera_seccion("Tres cosas que conviene entender")
 
 with st.expander("Por qué se divide por el tráfico"):
     st.write(
@@ -52,14 +54,14 @@ with st.expander("Por qué probabilidad no es certeza"):
         "este año. Es una herramienta para decidir dónde mirar primero, no un pronóstico."
     )
 
-st.divider()
+ui.cabecera_seccion("Para quien quiera profundizar")
 with st.expander("Detalle técnico"):
     ficha = datos.ficha_tramos()
     st.markdown(
         f"**Modelo de tramos.** {ficha['familia']}, unidad {ficha['unidad']}, objetivo "
         f"`{ficha['objetivo']}`. Predictores: {', '.join(ficha['predictores'])}. "
         f"Partición temporal: entrenamiento 2016-2022 sin 2020, validación 2023, test 2024 "
-        f"({ficha['n_test_comun']:,} observaciones). ROC-AUC 0,834 en test.".replace(",", "."))
+        f"({estilo.num(ficha['n_test_comun'])} observaciones). ROC-AUC 0,834 en test.")
     st.markdown(
         "**Modelo de provincias.** Regresión binomial negativa con offset logarítmico de "
         "vehículos-kilómetro y efectos jerárquicos por región con encogimiento. La "

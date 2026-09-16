@@ -1,9 +1,55 @@
 [theme]
 base = "light"
-primaryColor = "#b5332a"
-backgroundColor = "#ffffff"
-secondaryBackgroundColor = "#f9fafb"
-textColor = "#1f2937"
+primaryColor = "#0F3D4C"
+backgroundColor = "#F3F2EE"
+secondaryBackgroundColor = "#F8F7F4"
+textColor = "#17191C"
+linkColor = "#0F3D4C"
+linkUnderline = false
+borderColor = "#E3E1DB"
+dataframeBorderColor = "#E3E1DB"
+dataframeHeaderBackgroundColor = "#F8F7F4"
+showWidgetBorder = true
+baseRadius = "0.625rem"
+buttonRadius = "0.5rem"
+baseFontSize = 15
+font = "Inter, sans-serif"
+headingFont = "Inter, sans-serif"
+headingFontWeights = [600, 600, 600, 600, 600, 600]
+codeFontSize = "0.8rem"
+chartCategoricalColors = ["#0F3D4C", "#C27A5C", "#9A9DA1"]
+
+# Inter se sirve desde la propia app: la tipografia no depende de Google Fonts
+[[theme.fontFaces]]
+family = "Inter"
+url = "app/static/fuentes/inter-latin-400-normal.woff2"
+weight = "400"
+style = "normal"
+
+[[theme.fontFaces]]
+family = "Inter"
+url = "app/static/fuentes/inter-latin-500-normal.woff2"
+weight = "500"
+style = "normal"
+
+[[theme.fontFaces]]
+family = "Inter"
+url = "app/static/fuentes/inter-latin-600-normal.woff2"
+weight = "600"
+style = "normal"
+
+[[theme.fontFaces]]
+family = "Inter"
+url = "app/static/fuentes/inter-latin-700-normal.woff2"
+weight = "700"
+style = "normal"
 
 [server]
 maxUploadSize = 5
+enableStaticServing = true
+
+[client]
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false
