@@ -1,0 +1,16 @@
+{
+    "conjunto": "Test 2024",
+    "umbral": 0.5,
+    "total_accidentes": 101996,
+    "leves_reales": 91977,
+    "severos_reales": 10019,
+    "leves_correctamente_clasificados": 66878,
+    "falsas_alertas": 25099,
+    "severos_no_detectados": 2973,
+    "severos_detectados": 7046,
+    "alertas_totales": 32145,
+    "precision_severo": 0.21919427593715973,
+    "recall_severo": 0.7032637987823136,
+    "roc_auc": 0.7953406580922647,
+    "pr_auc": 0.4172739289912662
+}
