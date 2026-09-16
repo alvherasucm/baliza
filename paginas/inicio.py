@@ -35,6 +35,9 @@ ui.rejilla([
                      pie=f"calculado sobre {estilo.num(len(m24))} tramos de {datos.ANIO}"),
 ], plantilla="repeat(4, minmax(0, 1fr))")
 
+# Mostrar la imagen
+st.image("static/imagenes/accidente.jpg", use_container_width=True)
+
 ui.cabecera_seccion("Qué puedes hacer con Baliza",
                     "En el orden en que alguien toma la decisión: dónde está el riesgo, por "
                     "dónde vas a pasar y qué te puede costar.")

@@ -1,14 +1,14 @@
 [theme]
-base = "light"
-primaryColor = "#0F3D4C"
-backgroundColor = "#F3F2EE"
-secondaryBackgroundColor = "#F8F7F4"
-textColor = "#17191C"
-linkColor = "#0F3D4C"
+base = "dark"
+primaryColor = "#2E6275"
+backgroundColor = "#0E1419"
+secondaryBackgroundColor = "#172026"
+textColor = "#F8F9FA"
+linkColor = "#4A7384"
 linkUnderline = false
-borderColor = "#E3E1DB"
-dataframeBorderColor = "#E3E1DB"
-dataframeHeaderBackgroundColor = "#F8F7F4"
+borderColor = "#2C3942"
+dataframeBorderColor = "#2C3942"
+dataframeHeaderBackgroundColor = "#172026"
 showWidgetBorder = true
 baseRadius = "0.625rem"
 buttonRadius = "0.5rem"
@@ -17,7 +17,8 @@ font = "Inter, sans-serif"
 headingFont = "Inter, sans-serif"
 headingFontWeights = [600, 600, 600, 600, 600, 600]
 codeFontSize = "0.8rem"
-chartCategoricalColors = ["#0F3D4C", "#C27A5C", "#9A9DA1"]
+# Actualizado con azul claro, terracota (peligro) y gris suave
+chartCategoricalColors = ["#4A7384", "#C27A5C", "#8A9499"]
 
 # Inter se sirve desde la propia app: la tipografia no depende de Google Fonts
 [[theme.fontFaces]]

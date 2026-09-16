@@ -1,36 +1,44 @@
-/* Baliza · sistema visual.
+/* Baliza · sistema visual (Modo Oscuro).
    Una sola fuente de verdad: las variables de :root. Los componentes usan clases
    propias (bz-*). Solo tres ganchos tocan Streamlit y todos son estables:
    la cabecera, el contenedor principal y las clases st-key-* que Streamlit
    genera a partir del parametro key de st.container. */
 
 :root {
-  --bz-bg: #F3F2EE;
-  --bz-surface: #F8F7F4;
-  --bz-elevated: #FFFFFF;
-  --bz-text: #17191C;
-  --bz-text-2: #4F5358;
-  --bz-muted: #6E7277;
-  --bz-faint: #9A9DA1;
-  --bz-border: #E3E1DB;
-  --bz-border-strong: #D2CFC7;
-  --bz-primary: #0F3D4C;
+  --bz-bg: #0E1419;
+  --bz-surface: #121A21;
+  --bz-elevated: #172026;
+  --bz-text: #F8F9FA;
+  --bz-text-2: #CFD4D9;
+  --bz-muted: #8A9499;
+  --bz-faint: #59646B;
+  --bz-border: #2C3942;
+  --bz-border-strong: #3D4F5C;
+  
+  /* Primarios ligeramente aclarados para asegurar contraste en oscuro */
+  --bz-primary: #4A7384; 
   --bz-primary-2: #2E6275;
-  --bz-primary-soft: #E4ECEE;
+  --bz-primary-soft: #1B2933;
+  
+  /* Colores de riesgo (se mantienen, lucen espectaculares sobre negro) */
   --bz-risk-low: #D9A88C;
   --bz-risk-medium: #C27A5C;
   --bz-risk-high: #9D4A34;
   --bz-risk-very-high: #6B2118;
-  --bz-ok: #2F6B4F;
-  --bz-ok-soft: #E3EFE8;
-  --bz-warn: #8A5A12;
-  --bz-warn-soft: #F6ECD9;
+  
+  /* Estados adaptados a fondo oscuro */
+  --bz-ok: #50B887;
+  --bz-ok-soft: #11291E;
+  --bz-warn: #D19438;
+  --bz-warn-soft: #2E200E;
 
   --bz-s1: 4px; --bz-s2: 8px; --bz-s3: 12px; --bz-s4: 16px;
   --bz-s5: 24px; --bz-s6: 32px; --bz-s7: 48px; --bz-s8: 64px;
   --bz-r-sm: 6px; --bz-r-md: 10px; --bz-r-lg: 14px; --bz-r-pill: 999px;
-  --bz-shadow-sm: 0 1px 2px rgba(23, 25, 28, .05);
-  --bz-shadow-md: 0 1px 2px rgba(23, 25, 28, .04), 0 6px 16px rgba(23, 25, 28, .05);
+  
+  /* Sombras oscurecidas e intensificadas para que se perciban en modo oscuro */
+  --bz-shadow-sm: 0 2px 4px rgba(0, 0, 0, .25);
+  --bz-shadow-md: 0 4px 6px rgba(0, 0, 0, .2), 0 10px 24px rgba(0, 0, 0, .35);
 
   --bz-fs-eyebrow: 11px; --bz-fs-meta: 12px; --bz-fs-small: 13px; --bz-fs-body: 15px;
   --bz-fs-card-title: 13px; --bz-fs-section: 18px; --bz-fs-page: 30px; --bz-fs-kpi: 30px;
@@ -38,7 +46,8 @@
 
 /* ---- Estructura (ganchos de Streamlit) ---- */
 header[data-testid="stHeader"] {
-  background: rgba(248, 247, 244, .92);
+  /* Fondo adaptado al color principal oscuro */
+  background: rgba(14, 20, 25, .92);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--bz-border);
 }
@@ -137,7 +146,8 @@ header[data-testid="stHeader"] {
 .bz-card-foot { font-size: var(--bz-fs-meta); color: var(--bz-muted); margin-top: var(--bz-s2); line-height: 1.45; }
 .bz-delta { font-size: var(--bz-fs-meta); font-weight: 600; border-radius: var(--bz-r-pill); padding: 2px 8px; }
 .bz-delta.bueno { color: var(--bz-ok); background: var(--bz-ok-soft); }
-.bz-delta.malo { color: var(--bz-risk-high); background: #F4E6E0; }
+/* Cambiado a tono oscuro granate para encajar */
+.bz-delta.malo { color: var(--bz-risk-high); background: #3B1B15; }
 .bz-delta.neutro { color: var(--bz-text-2); background: var(--bz-surface); }
 .bz-help {
   display: inline-flex; width: 15px; height: 15px; border-radius: 50%;
@@ -154,7 +164,7 @@ header[data-testid="stHeader"] {
 .bz-stack { display: grid; gap: var(--bz-s3); }
 .bz-stats.compactas { display: grid; grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr));
   gap: var(--bz-s3); margin-top: var(--bz-s4); padding-top: var(--bz-s3);
-  border-top: 1px solid #EEECE7; }
+  border-top: 1px solid var(--bz-border); } /* Reemplazado color manual por variable */
 .bz-stats.compactas .bz-stat b { font-size: 16px; }
 .bz-stats.compactas .bz-stat span { font-size: 11px; line-height: 1.3; display: block; }
 .bz-stat b { display: block; font-size: 20px; font-weight: 600; color: var(--bz-text); }
@@ -166,8 +176,9 @@ header[data-testid="stHeader"] {
   font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
   border-radius: var(--bz-r-pill); padding: 3px 10px; line-height: 1.4;
 }
-.bz-badge.bajo { background: #F5E9E1; color: #6E3F28; }
-.bz-badge.medio { background: #EFD9CD; color: #6B3620; }
+/* Badges adaptados para que sean sutiles en modo oscuro y se lean los textos */
+.bz-badge.bajo { background: #2D2018; color: var(--bz-risk-low); }
+.bz-badge.medio { background: #331F16; color: var(--bz-risk-medium); }
 .bz-badge.alto { background: var(--bz-risk-high); color: #FFFFFF; }
 .bz-badge.muy-alto { background: var(--bz-risk-very-high); color: #FFFFFF; }
 .bz-badge.sin-dato { background: var(--bz-surface); color: var(--bz-muted); border: 1px solid var(--bz-border); }
@@ -195,13 +206,14 @@ header[data-testid="stHeader"] {
   border-bottom: 1px solid var(--bz-border); white-space: nowrap;
 }
 .bz-table td {
-  padding: 9px 14px; border-bottom: 1px solid #EEECE7; color: var(--bz-text);
+  padding: 9px 14px; border-bottom: 1px solid var(--bz-border); color: var(--bz-text);
   vertical-align: middle; white-space: nowrap;
 }
 .bz-table tr:last-child td { border-bottom: none; }
 .bz-table.ajustar td { white-space: normal; vertical-align: top; line-height: 1.45; }
 .bz-table tbody tr { transition: background .12s ease; }
-.bz-table tbody tr:hover { background: #F7F6F2; }
+/* Efecto hover oscuro */
+.bz-table tbody tr:hover { background: #1C2731; }
 .bz-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .bz-table th.num { text-align: right; }
 .bz-table .fuerte { font-weight: 600; }
@@ -209,7 +221,8 @@ header[data-testid="stHeader"] {
 .bz-table .sub { font-size: 12px; font-weight: 400; color: var(--bz-muted); margin-top: 1px; }
 .bz-table .rank { color: var(--bz-faint); font-variant-numeric: tabular-nums; width: 1%; }
 .bz-bar { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
-.bz-bar i { display: block; width: 64px; height: 6px; background: #EEECE7; border-radius: 3px; overflow: hidden; }
+/* Fondo barra de progreso en tablas */
+.bz-bar i { display: block; width: 64px; height: 6px; background: var(--bz-border); border-radius: 3px; overflow: hidden; }
 .bz-bar i b { display: block; height: 100%; background: var(--bz-primary-2); border-radius: 3px; }
 
 /* ---- InsightCard ---- */
@@ -230,8 +243,9 @@ header[data-testid="stHeader"] {
   background: var(--bz-primary-soft); color: var(--bz-primary);
   font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center;
 }
-.bz-info.aviso { background: var(--bz-warn-soft); border-color: #EBD9B8; }
-.bz-info.aviso .bz-info-icon { background: #EBD9B8; color: var(--bz-warn); }
+/* Alertas adaptadas */
+.bz-info.aviso { background: var(--bz-warn-soft); border-color: #5C431A; }
+.bz-info.aviso .bz-info-icon { background: #5C431A; color: var(--bz-warn); }
 .bz-info b { color: var(--bz-text); font-weight: 600; }
 .bz-empty {
   text-align: center; padding: var(--bz-s7) var(--bz-s5);

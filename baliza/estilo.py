@@ -12,15 +12,20 @@ MARCA = "Baliza"
 TAGLINE = "Sabes por dónde vas antes de salir"
 FUENTE = "Inter, system-ui, -apple-system, 'Segoe UI', sans-serif"
 
-TINTA = "#17191C"
-TINTA_2 = "#4F5358"
-TINTA_SUAVE = "#6E7277"
-TINTA_TENUE = "#9A9DA1"
-SUPERFICIE = "#FFFFFF"
-SUPERFICIE_SUAVE = "#F8F7F4"
-BORDE = "#E3E1DB"
-REJILLA = "#EEECE7"
-PRIMARIO = "#0F3D4C"
+# Textos claros para contraste sobre fondo oscuro
+TINTA = "#F8F9FA"         
+TINTA_2 = "#CFD4D9"       
+TINTA_SUAVE = "#8A9499"   
+TINTA_TENUE = "#59646B"   
+
+# Fondos oscuros basados en azul noche/pizarra
+SUPERFICIE = "#0E1419"        
+SUPERFICIE_SUAVE = "#172026"  
+BORDE = "#2C3942"             
+REJILLA = "#1F2930"           
+
+# Tonos primarios adaptados para lectura sobre fondo oscuro
+PRIMARIO = "#4A7384"
 PRIMARIO_2 = "#2E6275"
 
 # Una sola gama, de terracota a granate: el orden se lee en la luminosidad y el
@@ -64,12 +69,12 @@ PAGINAS = [
 def num(valor, decimales: int = 0) -> str:
     """1234567.8 -> '1.234.568'; con decimales, coma decimal."""
     texto = f"{valor:,.{decimales}f}"
-    return texto.replace(",", " ").replace(".", ",").replace(" ", ".")
+    return texto.replace(",", " ").replace(".", ",").replace(" ", ".")
 
 
 def pct(fraccion, decimales: int = 0) -> str:
     """0.939 -> '94 %'. El espacio antes del signo es la norma en espanol."""
-    return f"{num(fraccion * 100, decimales)} %"
+    return f"{num(fraccion * 100, decimales)} %"
 
 
 def tema_altair(grafico):
