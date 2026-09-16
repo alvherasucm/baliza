@@ -113,6 +113,127 @@ def modelo_gravedad():
     return modelo
 
 
+# ------------------------------------------------------ gravedad (Lourdes)
+
+# Lo que elige el usuario, traducido a los codigos del modelo. Cada opcion fija
+# a la vez todas las variables que dependen entre si: una hora de madrugada con
+# luz de dia o una autovia en zona urbana son escenarios que no existen, y el
+# modelo trabaja con combinaciones. Las horas y los meses se eligen dentro de
+# cualquier definicion razonable de franja y estacion.
+BLOQUES_GRAVEDAD = {
+    "Momento del día": {
+        "Por la mañana (10:00)": {"FRANJA_HORARIA": "Mañana", "HORA": "10",
+                                  "CONDICION_ILUMINACION": "1"},
+        "Por la tarde (17:00)": {"FRANJA_HORARIA": "Tarde", "HORA": "17",
+                                 "CONDICION_ILUMINACION": "1"},
+        "De noche (23:00)": {"FRANJA_HORARIA": "Noche", "HORA": "23",
+                             "CONDICION_ILUMINACION": "6"},
+        "De madrugada (4:00)": {"FRANJA_HORARIA": "Madrugada", "HORA": "4",
+                                "CONDICION_ILUMINACION": "6"},
+    },
+    "Día": {
+        "Entre semana": {"DIA_SEMANA": "2", "FIN_DE_SEMANA": "No"},
+        "Sábado": {"DIA_SEMANA": "6", "FIN_DE_SEMANA": "Sí"},
+        "Domingo": {"DIA_SEMANA": "7", "FIN_DE_SEMANA": "Sí"},
+    },
+    "Época del año": {
+        "Invierno": {"MES": "1", "ESTACION": "Invierno"},
+        "Primavera": {"MES": "4", "ESTACION": "Primavera"},
+        "Verano": {"MES": "7", "ESTACION": "Verano"},
+        "Otoño": {"MES": "11", "ESTACION": "Otoño"},
+    },
+    "Tiempo": {
+        "Despejado": {"CONDICION_METEO": "1", "CONDICION_FIRME": "1"},
+        "Nublado": {"CONDICION_METEO": "2", "CONDICION_FIRME": "1"},
+        "Lluvia débil": {"CONDICION_METEO": "3", "CONDICION_FIRME": "3"},
+        "Lluvia fuerte": {"CONDICION_METEO": "4", "CONDICION_FIRME": "3"},
+        "Nieve": {"CONDICION_METEO": "6", "CONDICION_FIRME": "6"},
+    },
+    "Carretera": {
+        "Autovía": {"ZONA": "1", "TIPO_VIA": "3.0",
+                    "TIPO_VIA_AGRUPADO": "Autopista_Autovia", "TRAZADO_PLANTA": "1"},
+        "Autopista de peaje": {"ZONA": "1", "TIPO_VIA": "1.0",
+                               "TIPO_VIA_AGRUPADO": "Autopista_Autovia", "TRAZADO_PLANTA": "1"},
+        "Convencional": {"ZONA": "1", "TIPO_VIA": "6.0",
+                         "TIPO_VIA_AGRUPADO": "Carretera", "TRAZADO_PLANTA": "1"},
+        "Convencional, en curva": {"ZONA": "1", "TIPO_VIA": "6.0",
+                                   "TIPO_VIA_AGRUPADO": "Carretera", "TRAZADO_PLANTA": "2"},
+    },
+}
+
+# Algunas etiquetas del diccionario de la DGT llegan cortadas a 50 caracteres
+ETIQUETAS_CORREGIDAS = {
+    "CONDICION_ILUMINACION": {
+        "4": "Sin luz natural, con alumbrado encendido",
+        "5": "Sin luz natural, con alumbrado apagado",
+    },
+}
+
+
+@st.cache_data(show_spinner=False)
+def caso_referencia_gravedad() -> tuple[dict, bool]:
+    """Caso real del test 2024 con el score mas cercano a la mediana.
+
+    Devuelve (caso, es_de_carretera). Si Lourdes entrega el caso de carretera se
+    usa tal cual. Mientras tanto, el suyo es urbano y se traslada a autovia
+    cambiando solo el bloque de carretera.
+    """
+    carretera = DATOS / "caso_default_2024_carretera.json"
+    es_de_carretera = carretera.exists()
+    origen = carretera if es_de_carretera else DATOS / "caso_default_2024.json"
+    caso = json.loads(origen.read_text(encoding="utf-8"))
+    caso.pop("score_severo", None)
+    if not es_de_carretera:
+        caso.update(BLOQUES_GRAVEDAD["Carretera"]["Autovía"])
+    return caso, es_de_carretera
+
+
+@st.cache_data(show_spinner=False)
+def etiquetas_gravedad() -> dict:
+    etiquetas = json.loads((DATOS / "labels_categorias.json").read_text(encoding="utf-8"))
+    etiquetas["DIA_SEMANA"] = {k: v.capitalize() for k, v in etiquetas["DIA_SEMANA"].items()}
+    for variable, cambios in ETIQUETAS_CORREGIDAS.items():
+        etiquetas[variable].update(cambios)
+    return etiquetas
+
+
+@st.cache_data(show_spinner=False)
+def importancia_gravedad() -> pd.Series:
+    """Importancia nativa de CatBoost. Dice cuanto usa el modelo cada variable,
+    no cuanto cambia la gravedad al moverla."""
+    valores = json.loads((DATOS / "feature_importance.json").read_text(encoding="utf-8"))
+    return pd.Series(valores, dtype=float).sort_values(ascending=False)
+
+
+@st.cache_data(show_spinner=False)
+def referencia_gravedad() -> np.ndarray:
+    """Los 101.996 scores del test 2024, ordenados."""
+    scores = pd.read_csv(DATOS / "scores_test_2024.csv").score_severo
+    return np.sort(scores.to_numpy(dtype=float))
+
+
+def puntuar_gravedad(escenarios: list[dict]) -> np.ndarray:
+    """Score Severo de varios escenarios completos en una sola llamada."""
+    entrada = metadata_gravedad()["entrada"]
+    tabla = pd.DataFrame(escenarios)[entrada["columnas"]]
+    for columna in entrada["categoricas"]:
+        tabla[columna] = tabla[columna].astype(str)
+    return modelo_gravedad().predict_proba(tabla)[:, 1]
+
+
+def percentil_gravedad(scores) -> np.ndarray:
+    """Puesto de cada escenario frente a los accidentes reales de 2024, de 0 a 100.
+    El score no esta calibrado: el orden es lo unico que se puede defender."""
+    return _rango_percentil(referencia_gravedad(), scores)
+
+
+def banda_gravedad(percentiles) -> list:
+    """Mismas bandas que los tramos: 'Muy alto' es el 5% mas grave de 2024."""
+    cortes = [-0.01] + [c * 100 for c in CUANTILES] + [100.01]
+    return list(pd.cut(np.asarray(percentiles, dtype=float), bins=cortes,
+                       labels=BANDAS, right=False))
+
+
 def predecir_tramos_usuario(tabla: pd.DataFrame, anio: int = ANIO):
     """Valida y predice una tabla introducida por el usuario.
 
@@ -183,12 +304,19 @@ def percentil_2024(prob) -> pd.Series:
     Rango percentil con posicion media en los empates: el mismo criterio que la
     API, para que los dos devuelvan el mismo numero hasta el segundo decimal.
     """
-    referencia = referencia_2024()
-    valores = pd.Series(prob).to_numpy(dtype=float)
+    serie = pd.Series(prob)
+    return pd.Series(_rango_percentil(referencia_2024(), serie),
+                     index=serie.index).round(2)
+
+
+def _rango_percentil(referencia: np.ndarray, valores) -> np.ndarray:
+    """Rango percentil con posicion media en los empates, sobre una referencia
+    ya ordenada. Un valor nulo sigue siendo nulo: sin dato no es riesgo cero."""
+    valores = np.asarray(valores, dtype=float)
     izquierda = np.searchsorted(referencia, valores, side="left")
     derecha = np.searchsorted(referencia, valores, side="right")
-    return pd.Series(100.0 * (izquierda + derecha) / 2.0 / referencia.size,
-                     index=pd.Series(prob).index).round(2)
+    rango = 100.0 * (izquierda + derecha) / 2.0 / referencia.size
+    return np.where(np.isnan(valores), np.nan, rango)
 
 
 def banda_riesgo(prob: pd.Series) -> pd.Series:

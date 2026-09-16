@@ -1,0 +1,22 @@
+{
+    "MES": "11",
+    "DIA_SEMANA": "2",
+    "HORA": "10",
+    "TIPO_ACCIDENTE": "12.0",
+    "CONDICION_ILUMINACION": "1",
+    "TRAZADO_PLANTA": "998",
+    "ZONA": "3",
+    "TIPO_VIA": "9.0",
+    "COD_PROVINCIA": "28",
+    "CONDICION_FIRME": "1",
+    "CONDICION_NIVEL_CIRCULA": "1",
+    "TOTAL_VEHICULOS": 2,
+    "VISIB_RESTRINGIDA_POR": "1",
+    "CONDICION_METEO": "1",
+    "FRANJA_HORARIA": "Mañana",
+    "FIN_DE_SEMANA": "No",
+    "ESTACION": "Otoño",
+    "TIPO_VIA_AGRUPADO": "Via_urbana",
+    "REGION": "Madrid",
+    "score_severo": 0.365908383301307
+}

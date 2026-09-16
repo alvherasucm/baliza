@@ -105,6 +105,88 @@ comprobar("el caso por defecto del metadata NO es un caso medio", score > 0.8,
           "esperado: los defaults son la moda de cada variable y juntos puntuan alto. "
           "Por eso la pantalla usa su propio caso de referencia.")
 
+print("  entrega 2: capa de interpretacion")
+import numpy as np
+import streamlit.logger
+
+streamlit.logger.set_log_level("error")
+from baliza.datos import BLOQUES_GRAVEDAD
+
+
+def puntuar(escenarios):
+    tabla = pd.DataFrame(escenarios)[meta["entrada"]["columnas"]]
+    for columna in meta["entrada"]["categoricas"]:
+        tabla[columna] = tabla[columna].astype(str)
+    return modelo.predict_proba(tabla)[:, 1]
+
+
+metricas = json.loads((DATOS / "metricas_test_2024.json").read_text(encoding="utf-8"))
+scores = pd.read_csv(DATOS / "scores_test_2024.csv").score_severo
+comprobar("scores del test completos y sin nulos",
+          len(scores) == metricas["total_accidentes"] and scores.notna().all(),
+          f"{len(scores):,} filas")
+alertas = int((scores >= metricas["umbral"]).sum())
+if alertas != metricas["alertas_totales"]:
+    print(f"  [AVISO] {alertas:,} scores >= {metricas['umbral']} frente a "
+          f"{metricas['alertas_totales']:,} alertas en las metricas: preguntado a Lourdes")
+
+for nombre in ["caso_default_2024.json", "caso_default_2024_carretera.json"]:
+    if not (DATOS / nombre).exists():
+        continue
+    referencia = json.loads((DATOS / nombre).read_text(encoding="utf-8"))
+    esperado = referencia.pop("score_severo")
+    obtenido = puntuar([referencia])[0]
+    comprobar(f"{nombre} reproduce su score", abs(obtenido - esperado) < 1e-9,
+              f"{obtenido:.8f}")
+
+etiquetas = json.loads((DATOS / "labels_categorias.json").read_text(encoding="utf-8"))
+sin_etiqueta = {v: sorted(set(meta["entrada"]["categorias"][v]) - set(etiquetas[v]))
+                for v in etiquetas}
+comprobar("toda categoria del modelo tiene etiqueta legible",
+          not any(sin_etiqueta.values()), str({v: c for v, c in sin_etiqueta.items() if c}))
+
+invalidos = [(bloque, opcion, variable, valor)
+             for bloque, opciones in BLOQUES_GRAVEDAD.items()
+             for opcion, valores in opciones.items()
+             for variable, valor in valores.items()
+             if valor not in meta["entrada"]["categorias"][variable]]
+comprobar("los bloques de la pantalla solo usan categorias del modelo", not invalidos,
+          str(invalidos[:3]))
+
+# El texto de la pantalla afirma dos cosas del modelo. Si una entrega nueva las
+# cambia, esta prueba avisa antes de que lo haga el tribunal.
+fichero_base = next(DATOS / n for n in ["caso_default_2024_carretera.json",
+                                        "caso_default_2024.json"] if (DATOS / n).exists())
+base = json.loads(fichero_base.read_text(encoding="utf-8"))
+base.pop("score_severo")
+nombres = list(BLOQUES_GRAVEDAD)
+combinaciones = [dict(zip(nombres, eleccion)) for eleccion in
+                 pd.MultiIndex.from_product([list(BLOQUES_GRAVEDAD[b]) for b in nombres])]
+
+
+def escenario(eleccion):
+    caso_bloques = dict(base)
+    for bloque, opcion in eleccion.items():
+        caso_bloques.update(BLOQUES_GRAVEDAD[bloque][opcion])
+    return caso_bloques
+
+
+def comparar(bloque, peor, mejor):
+    otros = [c for c in combinaciones if c[bloque] == mejor]
+    s_mejor = puntuar([escenario(c) for c in otros])
+    s_peor = puntuar([escenario({**c, bloque: peor}) for c in otros])
+    return float(np.mean(s_peor > s_mejor))
+
+
+lluvia = min(comparar("Tiempo", "Despejado", opcion)
+             for opcion in ["Lluvia débil", "Lluvia fuerte", "Nieve"])
+comprobar("con lluvia o nieve puntua menos grave en todas las combinaciones", lluvia == 1.0,
+          f"{lluvia:.0%}")
+noche = min(comparar("Momento del día", opcion, "Por la mañana (10:00)")
+            for opcion in ["De noche (23:00)", "De madrugada (4:00)"])
+comprobar("de noche o de madrugada puntua mas grave en la gran mayoria", noche >= 0.85,
+          f"{noche:.0%} de las combinaciones")
+
 titulo("3. Provincias (Miki)")
 miki = pd.read_csv(DATOS / "provincias_2016_2024.csv", sep=";", encoding="utf-8-sig")
 maestra = pd.read_csv(DATOS / "tabla_maestra.csv", sep=None, engine="python",

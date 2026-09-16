@@ -51,5 +51,16 @@ las pruebas de integración.
 - **El color nunca va solo.** La escala amarillo-rojo lleva siempre la etiqueta de texto.
 - **Cada pantalla que da un número** lleva al lado qué haría cualquiera a ojo, qué dice el
   modelo y cuánto se equivoca cada uno.
-- **El score de gravedad no está calibrado**: se enseña como cociente entre dos escenarios,
-  nunca como porcentaje.
+- **El score de gravedad no está calibrado**: se enseña como puesto frente a los 101.996
+  accidentes del test de 2024 («más grave que 68 de cada 100»), nunca como porcentaje de
+  probabilidad ni como cociente entre dos escenarios.
+- **Gravedad se compara con escenarios completos.** El usuario elige bloques coherentes
+  (`BLOQUES_GRAVEDAD` en `baliza/datos.py`), nunca una variable suelta: el modelo trabaja
+  con combinaciones.
+
+## Contrato de gravedad
+
+`datos/` lleva, sin modificar, la segunda entrega de Lourdes: `caso_default_2024.json`,
+`scores_test_2024.csv`, `labels_categorias.json` y `feature_importance.json`. Si llega
+`datos/caso_default_2024_carretera.json`, la pantalla lo usa como caso de referencia sin
+tocar código; mientras no exista, se usa el caso urbano trasladado a autovía.
