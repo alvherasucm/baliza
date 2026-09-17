@@ -16,7 +16,7 @@ ui.cabecera_pagina(
     "Tu ruta",
     "Cuánto riesgo acumula tu trayecto",
     "Elige una carretera, de dónde sales y adónde vas. Baliza resume el riesgo del recorrido "
-    "y te dice dónde se concentra.",
+    "y te enseña en qué tramos se acumula.",
     meta=[("Corredores", str(len(corredores))), ("Año", str(datos.ANIO)),
           ("Referencia", "media nacional = 100")],
 )
@@ -56,15 +56,16 @@ en_peor = int(valida.banda.isin(["Alto", "Muy alto"]).sum())
 st.write("")
 ui.rejilla([
     ui.tarjeta_cifra("Índice de la ruta", f"{indice:.0f}",
-                     ayuda="Media nacional = 100. Ponderado por los kilómetros que recorres.",
+                     ayuda="Media nacional = 100. Cada tramo pesa según los kilómetros que "
+                           "haces en él.",
                      delta=f"{'+' if indice >= 100 else '−'}{estilo.num(abs(indice - 100))}"
                            " % respecto a España",
                      tono="malo" if indice > 100 else "bueno"),
     ui.tarjeta_cifra("Tramos que atraviesas", str(len(ruta)),
                      pie=f"{estilo.num(pk1 - pk0)} km entre {origen} y {destino}"),
     ui.tarjeta_cifra("Tramos en el 20 % peor", str(en_peor), unidad=f"de {len(valida)}",
-                     ayuda="Los niveles son cuantiles nacionales: «Muy alto» es el 5 % peor "
-                           "del país.",
+                     ayuda="Los niveles salen de comparar con toda España: «Muy alto» es el "
+                           "5 % de tramos con más riesgo.",
                      pie="con nivel alto o muy alto"),
 ])
 ui.recorrido(list(dict.fromkeys(ruta.provincia)), prefijo="Provincias, en el orden en que las pasas:")
@@ -72,7 +73,7 @@ ui.recorrido(list(dict.fromkeys(ruta.provincia)), prefijo="Provincias, en el ord
 ui.cabecera_seccion(
     "Mapa lineal del recorrido",
     "Cada bloque ocupa los kilómetros reales del tramo. La altura es la probabilidad anual "
-    "estimada y el color indica su posición respecto al resto de España.")
+    "estimada y el color, su nivel frente al resto de España.")
 
 perfil = valida[["pk_inicio_km", "pk_fin_km", "provincia", "carretera",
                  "PROB_ACCIDENTE_TRAMO_ANIO", "percentil", "banda"]].copy()
@@ -114,13 +115,14 @@ grafico = (
 )
 with ui.contenedor_grafico("ruta"):
     st.altair_chart(estilo.tema_altair(grafico), theme=None, use_container_width=True)
-    st.caption("93,9 % significa que el modelo estima un 93,9 % de probabilidad de que "
-               "ese tramo registre al menos un accidente durante el año; no es la probabilidad "
-               "de que tú tengas un accidente al pasar.")
+    st.caption("Un 93,9 % quiere decir que el modelo da un 93,9 % de probabilidad a que en ese "
+               "tramo haya al menos un accidente durante el año. Habla del tramo con todo su "
+               "tráfico, y no de la probabilidad de que tú tengas un accidente al pasar.")
 
 if sin_dato > 1:
-    ui.panel_info(f"Hay {estilo.num(sin_dato)} km del recorrido sin tramo medido. No son riesgo "
-                  f"cero: son kilómetros de los que no tenemos aforo en {datos.ANIO}.")
+    ui.panel_info(f"Hay {estilo.num(sin_dato)} km del recorrido sin tramo medido, porque en "
+                  f"{datos.ANIO} no hay aforo de esos kilómetros. Que no tengan nota no quiere "
+                  "decir que no tengan riesgo.")
 
 ui.cabecera_seccion("Los tres puntos a vigilar",
                     "Los tramos del recorrido con mayor probabilidad anual.")
@@ -134,14 +136,15 @@ ui.lista_riesgo([
 ])
 
 ui.conclusiones([
-    ("Cuanto más largo, más riesgo",
-     "Es lo que diría cualquiera a ojo, y es cierto. Pero no distingue entre dos rutas de la "
-     "misma longitud."),
-    (f"Esta ruta: índice {indice:.0f}",
-     "El modelo pondera cada tramo por los kilómetros que haces tú. La media nacional vale 100."),
-    ("Acierta 8 de cada 10 veces",
-     "Al separar tramos con y sin accidente, el modelo acierta 8 de cada 10 veces "
-     "(ROC-AUC 0,83 en 2024)."),
+    ("A ojo: más kilómetros, más riesgo",
+     "La regla funciona hasta que comparas dos rutas de la misma longitud. Ahí solo sirve "
+     "mirar tramo a tramo."),
+    (f"Con el modelo: índice {indice:.0f}",
+     "Cada tramo cuenta según los kilómetros que haces en él. Una ruta con índice 100 estaría "
+     "en la media de España."),
+    ("Cuánto se equivoca",
+     "Si se compara un tramo que tuvo accidentes en 2024 con otro que no, el modelo da más "
+     "riesgo al primero en 8 de cada 10 parejas (ROC-AUC 0,83)."),
 ])
 
 st.write("")

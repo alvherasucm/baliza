@@ -7,46 +7,48 @@ RAIZ = Path(__file__).resolve().parent.parent
 CSS = Path(__file__).resolve().parent / "estilos.css"
 LOGO = RAIZ / "static" / "marca" / "baliza_logo.svg"
 ICONO = RAIZ / "static" / "marca" / "baliza_icono.svg"
+# Servida por Streamlit desde static/ (enableStaticServing en config.toml)
+PORTADA_URL = "app/static/imagenes/accidente.jpg"
 
 MARCA = "Baliza"
 TAGLINE = "Sabes por dónde vas antes de salir"
 FUENTE = "Inter, system-ui, -apple-system, 'Segoe UI', sans-serif"
 
-# Textos claros para contraste sobre fondo oscuro
-TINTA = "#F8F9FA"         
-TINTA_2 = "#CFD4D9"       
-TINTA_SUAVE = "#8A9499"   
-TINTA_TENUE = "#59646B"   
+# Tema oscuro. Contraste medido sobre la tarjeta (#172026): los textos pasan de
+# 4,5 y las marcas de los graficos, de 3.
+TINTA = "#F8F9FA"
+TINTA_2 = "#CFD4D9"
+TINTA_SUAVE = "#8A9499"
+TINTA_TENUE = "#7C8990"
 
-# Fondos oscuros basados en azul noche/pizarra
-SUPERFICIE = "#0E1419"        
-SUPERFICIE_SUAVE = "#172026"  
-BORDE = "#2C3942"             
-REJILLA = "#1F2930"           
+SUPERFICIE = "#0E1419"
+SUPERFICIE_SUAVE = "#172026"
+BORDE = "#2C3942"
+REJILLA = "#1F2930"
 
-# Tonos primarios adaptados para lectura sobre fondo oscuro
-PRIMARIO = "#4A7384"
-PRIMARIO_2 = "#2E6275"
+# PRIMARIO para texto, lineas y barras; PRIMARIO_2 para rellenos con texto blanco
+PRIMARIO = "#7DB3C8"
+PRIMARIO_2 = "#3A7890"
 
-# Una sola gama, de terracota a granate: el orden se lee en la luminosidad y el
-# granate queda para el 5% mas extremo. Validada como escala ordinal.
+# Sobre fondo oscuro, lo que mas resalta es el color mas saturado, no el mas
+# oscuro. De gris calido a rojo, para que «Muy alto» sea lo primero que se ve.
 COLOR_BANDA = {
-    "Bajo": "#D9A88C",
-    "Medio": "#C27A5C",
-    "Alto": "#9D4A34",
-    "Muy alto": "#6B2118",
+    "Bajo": "#9C8B7E",
+    "Medio": "#D9A55B",
+    "Alto": "#E8743F",
+    "Muy alto": "#F2483F",
 }
 
-# Indices con media nacional = 100: petroleo por debajo, terracota por encima y
-# gris neutro en el centro.
+# Indices con media nacional = 100: azul por debajo, rojo por encima y un gris
+# apagado en el centro, para que resalten los extremos y no la media.
 ESCALA_INDICE = [
-    [0.00, "#0F3D4C"],
-    [0.25, "#4A7384"],
-    [0.45, "#BACBD1"],
-    [0.50, "#ECEAE4"],
-    [0.55, "#E6C7B4"],
-    [0.75, "#C27A5C"],
-    [1.00, "#6B2118"],
+    [0.00, "#6FA8C2"],
+    [0.25, "#4F8BA3"],
+    [0.45, "#3B5664"],
+    [0.50, "#465058"],
+    [0.55, "#6B4A3E"],
+    [0.75, "#C8623F"],
+    [1.00, "#F2483F"],
 ]
 
 # (clave, etiqueta, fichero, icono, grupo). app.py construye la navegacion

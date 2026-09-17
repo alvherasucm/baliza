@@ -17,7 +17,7 @@ ui.cabecera_pagina(
     "El riesgo de tu provincia frente a España",
     "Compara el riesgo de una provincia con la media del país y mira cómo ha evolucionado.",
     meta=[("Año", str(int(prov.ANYO.max()))), ("Referencia", "España = 100"),
-          ("Serie", "2016–2024 sin 2020")],
+          ("Serie", "2016-2024 sin 2020")],
 )
 
 # Solo provincias con dato en el ultimo anio: sin el, no hay diagnostico que ensenar
@@ -48,11 +48,12 @@ ui.rejilla([
                      pie="de más a menos riesgo relativo"),
     ui.tarjeta_cifra("Año", f"{int(fila.ANYO)}", pie="último año con datos"),
 ])
+mas_accidentes = ultimo.loc[ultimo.N_ACC.idxmax()]
 ui.panel_info(
-    "El índice compara accidentes por vehículo-kilómetro, no accidentes a secas. Madrid tiene "
-    "muchísimos accidentes en total y aun así está entre las provincias con menos riesgo por "
-    "kilómetro recorrido: es lo que pasa cuando separas cuánto tráfico hay de cómo de "
-    "arriesgado es cada kilómetro.")
+    f"El índice cuenta accidentes por vehículo-kilómetro, así que separa cuánto tráfico hay de "
+    f"cómo de arriesgado es cada kilómetro. {mas_accidentes.PROV} es la provincia con más "
+    f"accidentes de {int(mas_accidentes.ANYO)}, pero por kilómetro recorrido queda en el puesto "
+    f"{mas_accidentes.puesto} de {len(ultimo)}, con índice {mas_accidentes.indice:.0f}.")
 
 izquierda, derecha = st.columns([3, 2], gap="medium")
 
@@ -91,7 +92,7 @@ with derecha:
                          ui.columna("cambio_texto", "Puntos", "derecha")])
         st.write("")
 
-ui.cabecera_seccion("Lo que viene", eyebrow="Previsión")
+ui.cabecera_seccion("Previsión frente a lo que pasó", eyebrow="Modelo provincial")
 if serie.pred_jerarquico.notna().any():
     ultima_pred = serie.dropna(subset=["pred_jerarquico"]).iloc[-1]
     error = abs(ultima_pred.pred_jerarquico - ultima_pred.N_ACC) / ultima_pred.N_ACC
@@ -101,13 +102,15 @@ if serie.pred_jerarquico.notna().any():
         f"**{estilo.num(ultima_pred.N_ACC)}**. Se equivocó un **{estilo.pct(error)}**.")
 
 ui.conclusiones([
-    ("La regla ingenua acierta mucho",
-     "Suponer que el año que viene se parecerá al pasado deja un error medio de 21,6 "
-     "accidentes por provincia."),
-    ("El modelo mejora a la regla",
-     "El modelo jerárquico con exposición baja el error medio a 18,3."),
-    ("Un 15 % mejor, no un 80 %",
-     "A nivel provincial la inercia histórica manda casi por completo."),
+    ("A ojo: repetir el año anterior",
+     "Suponer que cada provincia tendrá los mismos accidentes que el año pasado ya funciona "
+     "bastante bien: se equivoca en 21,6 accidentes de media."),
+    ("Con el modelo: 18,3 de error",
+     "El modelo tiene en cuenta el tráfico y agrupa las provincias por región. Con eso baja "
+     "el error medio a 18,3 accidentes."),
+    ("Cuánto mejora: un 15 %",
+     "Es una mejora modesta. En una provincia, lo que pasó el año anterior explica casi todo "
+     "lo que pasa al siguiente."),
 ])
 
 st.write("")

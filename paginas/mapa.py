@@ -14,12 +14,13 @@ CRITERIOS = {
         "PROB_ACCIDENTE_TRAMO_ANIO",
         "Ordena por la estimación del modelo. El percentil indica la posición del tramo "
         "respecto a toda la red analizada en 2024."),
-    "Más accidentes": ("N_ACC", "Accidentes en el tramo durante 2024. Ordena dónde invertir."),
+    "Más accidentes": ("N_ACC", "Accidentes en el tramo durante 2024. Sirve para decidir "
+                                "dónde invertir."),
     "Más accidentes por kilómetro": (
-        "acc_por_km", "Accidentes divididos por la longitud. Ordena puntos negros."),
+        "acc_por_km", "Accidentes divididos por la longitud. Sirve para localizar puntos negros."),
     "Más riesgo para el que pasa": (
-        "TASA_100M", "Accidentes por cada 100 millones de vehículos-kilómetro. "
-                     "Descuenta el tráfico, así que una carretera vacía puede salir arriba."),
+        "TASA_100M", "Accidentes por cada 100 millones de vehículos-kilómetro. Descuenta el "
+                     "tráfico, así que una carretera con muy poco tráfico puede quedar arriba."),
 }
 
 NIVELES = {
@@ -74,7 +75,7 @@ with resumen:
         primero = ranking.iloc[0]
         destacada = ui.tarjeta_destacada(
             f"Primero de la lista · {criterio}",
-            f"{primero.carretera} · km {primero.pk_inicio_km:.0f}–{primero.pk_fin_km:.0f}",
+            f"{primero.carretera} · km {primero.pk_inicio_km:.0f} a {primero.pk_fin_km:.0f}",
             f"{primero.provincia} · {primero.tipo_via_presentacion}",
             [(_valor(primero.N_ACC), "accidentes en 2024"),
              (_valor(primero.acc_por_km, 2), "accidentes por km"),
@@ -111,16 +112,16 @@ else:
     titulo_1 = "El tráfico explica buena parte del ranking"
 ui.conclusiones([
     (titulo_1,
-     "Donde hay más tráfico hay más accidentes. Es verdad, y por eso el ranking de accidentes "
-     "se parece al de intensidad de tráfico."),
-    ("La exposición cambia el orden",
-     "«Más riesgo para el que pasa» descuenta el tráfico y deja solo lo que aporta el tramo. "
-     "Por accidentes por kilómetro salen rondas urbanas; por riesgo para el que pasa, "
-     "nacionales largas y poco transitadas."),
-    ("Cada criterio responde a una pregunta distinta",
-     "Quien reparte presupuesto y quien va a conducir no buscan lo mismo. Sin exposición, un "
-     "tramo de 200 metros con dos accidentes puede colarse arriba: por eso el criterio por "
-     "defecto no es ese."),
+     "Donde hay más tráfico hay más accidentes, así que el ranking por número de accidentes "
+     "se parece mucho al de intensidad de tráfico."),
+    ("Descontar el tráfico cambia el orden",
+     "«Más riesgo para el que pasa» divide por el tráfico y deja lo que aporta el propio "
+     "tramo. Si se ordena por accidentes por kilómetro, arriba salen rondas urbanas; si se "
+     "ordena por riesgo para el que pasa, nacionales largas y con poco tráfico."),
+    ("Por qué hay cuatro criterios",
+     "Quien reparte presupuesto y quien va a conducir buscan cosas distintas. El criterio por "
+     "defecto es la estimación del modelo porque, contando solo accidentes por kilómetro, un "
+     "tramo de 200 metros con dos accidentes puede colarse arriba."),
 ])
 
 st.write("")

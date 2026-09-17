@@ -1,10 +1,10 @@
 [theme]
 base = "dark"
-primaryColor = "#2E6275"
+primaryColor = "#3A7890"
 backgroundColor = "#0E1419"
 secondaryBackgroundColor = "#172026"
 textColor = "#F8F9FA"
-linkColor = "#4A7384"
+linkColor = "#7DB3C8"
 linkUnderline = false
 borderColor = "#2C3942"
 dataframeBorderColor = "#2C3942"
@@ -17,8 +17,7 @@ font = "Inter, sans-serif"
 headingFont = "Inter, sans-serif"
 headingFontWeights = [600, 600, 600, 600, 600, 600]
 codeFontSize = "0.8rem"
-# Actualizado con azul claro, terracota (peligro) y gris suave
-chartCategoricalColors = ["#4A7384", "#C27A5C", "#8A9499"]
+chartCategoricalColors = ["#7DB3C8", "#E8743F", "#8A9499"]
 
 # Inter se sirve desde la propia app: la tipografia no depende de Google Fonts
 [[theme.fontFaces]]

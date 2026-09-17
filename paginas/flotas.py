@@ -1,7 +1,8 @@
-"""08 Flotas. Demostrar que hay alguien dispuesto a pagar por esto y que el
-modelo es consumible desde fuera. El coste por parte lo pone el cliente: asi no
-inventamos ninguna cifra economica. La prediccion y los porcentajes siguen las
-decisiones de Anna; aqui solo cambia la presentacion."""
+"""08 Flotas. La unica pantalla que ejecuta el modelo de tramos sobre datos que
+aporta el usuario. La prediccion y los porcentajes siguen las decisiones de
+Anna; aqui solo cambia la presentacion."""
+from datetime import date
+
 import pandas as pd
 import streamlit as st
 
@@ -23,19 +24,18 @@ PLANTILLA = pd.DataFrame([
 ui.cabecera_pagina(
     "Flotas",
     "Puntúa las rutas de tu flota",
-    "Sube tus rutas habituales con cuántas veces por semana las haces. Baliza las ordena por "
-    "exposición real: riesgo del tramo por frecuencia de paso.",
+    "Sube tus rutas habituales (carretera y kilómetros) y cuántas veces por semana las haces. "
+    "Baliza puntúa cada una con el modelo y las ordena combinando ese riesgo con la frecuencia "
+    "de paso.",
     meta=[("Formato", "CSV"), ("Modelo", f"tramos {datos.ANIO}"), ("Tamaño máximo", "5 MB")],
 )
 
 with ui.filtros("panel_carga"):
-    c1, c2, c3 = st.columns([3, 1.2, 1.2], gap="medium", vertical_alignment="bottom")
+    c1, c2 = st.columns([3, 1.2], gap="medium", vertical_alignment="bottom")
     subido = c1.file_uploader("Tu tabla de rutas", type=["csv"])
     c2.download_button("Descargar plantilla", PLANTILLA.to_csv(index=False).encode("utf-8"),
                        "plantilla_rutas.csv", "text/csv", width="stretch",
                        icon=":material/download:")
-    coste = c3.number_input("Coste medio por parte (€)", 0, 100_000, 1_200, step=100,
-                            help="Lo pones tú. Nosotros no inventamos costes.")
 
 tabla = PLANTILLA.copy()
 if subido is not None:
@@ -73,15 +73,17 @@ prediccion["exposicion"] = prediccion.PROB_ACCIDENTE_TRAMO_ANIO * prediccion.via
 prediccion = prediccion.sort_values("exposicion", ascending=False)
 
 a_vigilar = int(prediccion.banda.isin(["Alto", "Muy alto"]).sum())
-ui.cabecera_seccion("Resultado", "Ordenado por exposición: riesgo del tramo por viajes a la semana.")
+ui.cabecera_seccion("Resultado", "Orden: probabilidad del tramo multiplicada por los viajes a la "
+                                 "semana. Es una regla de Baliza para priorizar; el modelo solo "
+                                 "da la probabilidad.")
 ui.rejilla([
     ui.tarjeta_cifra("Rutas analizadas", str(len(prediccion))),
-    ui.tarjeta_cifra("Entre el 20 % peor de España", str(a_vigilar),
+    ui.tarjeta_cifra("En el 20 % con más riesgo de España", str(a_vigilar),
                      unidad=f"de {len(prediccion)}", pie="con nivel alto o muy alto"),
-    ui.tarjeta_cifra("Si evitas la ruta más expuesta",
+    ui.tarjeta_cifra("Peso de la primera ruta",
                      estilo.pct(prediccion.exposicion.iloc[0] / prediccion.exposicion.sum()),
-                     ayuda="Parte de tu exposición total que concentra esa sola ruta.",
-                     pie="de tu exposición total desaparece"),
+                     ayuda="Qué parte del total se concentra en la ruta que encabeza la lista.",
+                     pie="de la suma de probabilidad × viajes de tu flota"),
 ])
 
 vista = prediccion.copy()
@@ -101,28 +103,28 @@ ui.tabla(vista, [
 ], ranking=True)
 st.caption("Probabilidad anual: estimación de que el tramo registre al menos un accidente durante "
            "el año; no es el riesgo individual de un viaje. «Peor que» es el percentil del tramo "
-           "dentro de los 7.248 de 2024, el mismo número que devuelve el campo percentil_2024 "
-           "de la API.")
+           "dentro de los 7.248 de 2024.")
 
-if coste:
-    ui.panel_info(f"Con un coste medio de {estilo.num(coste)} € por parte, cada punto de esta "
-                  "tabla que consigas bajar se traduce en partes que no ocurren. La cifra en "
-                  "euros la pones tú.")
-
-ui.cabecera_seccion("Pedirlo desde tu sistema",
-                    "La misma puntuación se pide desde fuera, tramo a tramo, para que un motor de "
-                    "rutas la use al calcular un itinerario.", eyebrow="API")
-st.code("""curl -X POST https://api.baliza.example/predict \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "provincia": "Jaén",
-    "carretera": "A-4",
-    "pk_inicio_km": 245.5,
-    "pk_fin_km": 250.7,
-    "tipo_via": "Autopista_autovia",
-    "imd_total": 31844,
-    "proporcion_pesados": 0.14
-  }'""", language="bash")
-
-ui.en_desarrollo("La dirección de la API es de ejemplo: el servicio funciona en local y falta "
-                 "publicarlo con https.")
+paquete, _ = datos.modelo_tramos()
+version = " | ".join(str(paquete.get(c, "")) for c in ("version_datos", "familia", "configuracion"))
+descarga = pd.DataFrame({
+    "puesto": range(1, len(prediccion) + 1),
+    "provincia": prediccion.provincia,
+    "carretera": prediccion.carretera,
+    "pk_inicio": prediccion.pk_inicio_km,
+    "pk_fin": prediccion.pk_fin_km,
+    "tipo_via": prediccion.tipo_via,
+    "imd_total": prediccion.imd_total,
+    "proporcion_pesados": prediccion.proporcion_pesados.round(4),
+    "viajes_semana": prediccion.viajes_semana,
+    "probabilidad_anual": prediccion.PROB_ACCIDENTE_TRAMO_ANIO.round(4),
+    "percentil_2024": prediccion.percentil,
+    "nivel": prediccion.banda.astype(str),
+    "fuera_rango_entrenamiento": vista.fuera_rango,
+    "version_modelo": version,
+    "fecha_calculo": date.today().isoformat(),
+})
+# Punto y coma y coma decimal: el CSV se abre bien en un Excel configurado en espanol
+st.download_button("Descargar resultados", descarga.to_csv(sep=";", decimal=",", index=False)
+                   .encode("utf-8-sig"), f"baliza_flotas_{date.today():%Y-%m-%d}.csv",
+                   "text/csv", icon=":material/download:", on_click="ignore")

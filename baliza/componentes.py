@@ -53,6 +53,11 @@ def cabecera_seccion(titulo: str, descripcion: str | None = None,
     _pintar(f'<div class="bz-section">{ante}<h3>{_e(titulo)}</h3>{desc}</div>')
 
 
+def imagen_portada(url: str, texto_alternativo: str) -> None:
+    """Franja de imagen a todo el ancho, recortada a una altura fija."""
+    _pintar(f'<img class="bz-portada" src="{_e(url)}" alt="{_e(texto_alternativo)}">')
+
+
 def filtros(clave: str = "filtros"):
     """FilterBar: un unico bloque para todos los controles de exploracion."""
     return st.container(key=clave)
@@ -126,8 +131,8 @@ def rejilla(tarjetas: list[str], plantilla: str | None = None) -> None:
     _pintar(f'<div class="bz-grid"{estilo_rejilla}>{"".join(tarjetas)}</div>')
 
 
-def conclusiones(items: list[tuple[str, str]], titulo: str = "Lo que dicen los datos",
-                 eyebrow: str = "Insights del modelo", columnas: int | None = None) -> None:
+def conclusiones(items: list[tuple[str, str]], titulo: str = "Qué dicen los datos",
+                 eyebrow: str = "Conclusiones", columnas: int | None = None) -> None:
     """InsightCards numeradas. La metodologia va aparte, en un desplegable."""
     cabecera_seccion(titulo, eyebrow=eyebrow)
     tarjetas = "".join(

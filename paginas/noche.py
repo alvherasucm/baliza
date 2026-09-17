@@ -48,8 +48,8 @@ def etiqueta(variable: str) -> str:
 ui.cabecera_pagina(
     "Salir de noche",
     "Cuánto cambia la gravedad según cuándo sales",
-    "Compara dos salidas por la misma carretera. Si hay un accidente, ¿cuánto cambia que sea "
-    "grave o mortal?",
+    "Compara dos salidas por la misma carretera y mira cómo cambia la gravedad de un "
+    "accidente, si llega a ocurrir.",
     meta=[("Referencia", f"{estilo.num(datos.referencia_gravedad().size)} accidentes de 2024"),
           ("Modelo", "gravedad leve / grave o mortal")],
 )
@@ -73,18 +73,18 @@ diferencia = puestos[1] - puestos[0]
 
 if diferencia >= UMBRAL_IGUALES:
     lectura_valor, lectura_pie = f"+{diferencia:.0f}", (
-        "de cada 100 sube la gravedad con las condiciones de B, si hay accidente.")
+        "más arriba en gravedad con las condiciones de B, si hay un accidente.")
 elif diferencia <= -UMBRAL_IGUALES:
     lectura_valor, lectura_pie = f"−{-diferencia:.0f}", (
-        "de cada 100 baja la gravedad con las condiciones de B, si hay accidente. No dice nada "
-        "de la probabilidad de tenerlo.")
+        "más abajo en gravedad con las condiciones de B, si hay un accidente. Esto no dice si "
+        "es más o menos probable tenerlo.")
 else:
     lectura_valor, lectura_pie = "≈", (
-        f"Para el modelo, las dos salidas son prácticamente iguales: menos de "
-        f"{UMBRAL_IGUALES} puestos de diferencia.")
+        f"Las dos salidas quedan a menos de {UMBRAL_IGUALES} puestos. Para el modelo son "
+        f"casi iguales.")
 
-ayuda = ("Accidentes con víctimas de 2024 que el modelo puntúa por debajo de esta salida. "
-         "Es un puesto, no una probabilidad.")
+ayuda = ("De cada 100 accidentes con víctimas de 2024, cuántos puntúa el modelo por debajo "
+         "de esta salida. Es un puesto en una clasificación; el modelo no da probabilidades.")
 ui.cabecera_seccion("Resultado", "Puesto de cada salida frente a los accidentes reales de 2024.")
 ui.rejilla([
     ui.tarjeta_cifra(f"Salida {salida} · más grave que", f"{puesto:.0f}", unidad="de cada 100",
@@ -95,9 +95,9 @@ ui.rejilla([
                       pie=lectura_pie, clase="bz-feature")])
 
 origen = ("un accidente real en carretera de 2024, el de gravedad mediana" if es_de_carretera
-          else "un accidente real de 2024 de gravedad mediana, trasladado a carretera")
+          else "un accidente real de 2024 de gravedad mediana, pasado a carretera")
 ui.panel_info(
-    f"Lo que no eliges se queda como en {origen}: "
+    f"Todo lo que no eliges se toma de {origen}: "
     f"{etiqueta('TIPO_ACCIDENTE').lower()}, {int(caso['TOTAL_VEHICULOS'])} vehículos, "
     f"{etiqueta('VISIB_RESTRINGIDA_POR').lower()}, circulación en "
     f"{etiqueta('CONDICION_NIVEL_CIRCULA').lower()} y provincia de {etiqueta('COD_PROVINCIA')}.",
@@ -105,16 +105,16 @@ ui.panel_info(
 
 metricas = datos.metricas_gravedad()
 ui.conclusiones([
-    ("De noche, más grave",
-     "Es lo que diría cualquiera, y el modelo coincide: de noche o de madrugada el accidente "
-     "puntúa más grave en la gran mayoría de combinaciones."),
-    ("Con lluvia, menos grave",
-     "Aquí el modelo discrepa de la intuición: con lluvia o nieve puntúa el accidente como menos "
-     "grave, en cualquier combinación de esta pantalla."),
-    ("Avisa de más, a propósito",
-     f"De cada 10 accidentes graves reales detecta 7, y de cada 10 avisos que da, "
-     f"{metricas['precision_severo'] * 10:.0f} acaban siendo graves. No avisar de un grave "
-     f"cuesta más que avisar de más."),
+    ("La noche agrava el accidente",
+     "Coincide con lo que esperaría cualquiera. En casi todas las combinaciones de esta "
+     "pantalla, un accidente de noche o de madrugada puntúa más grave que uno de día."),
+    ("Con lluvia o nieve puntúa menos grave",
+     "Va contra la intuición y se repite en todas las combinaciones de esta pantalla. El "
+     "modelo no explica por qué."),
+    ("Prefiere avisar de más",
+     f"De cada 10 accidentes graves detecta 7. A cambio, de cada 10 avisos solo "
+     f"{metricas['precision_severo'] * 10:.0f} acaban siendo graves: se ajustó para que se le "
+     f"escapen pocos accidentes graves, aunque dé más falsas alarmas."),
 ])
 
 st.write("")
@@ -131,16 +131,18 @@ with st.expander("En qué se fija el modelo"):
                      ui.columna("peso", "Peso en el modelo", "barra", decimales=1),
                      ui.columna("uso", "En esta pantalla", "suave")], alto=420)
     st.caption(
-        "Mide cuánto usa el modelo cada dato para ordenar los accidentes, no cuánto cambia la "
-        "gravedad si lo cambias: el modelo trabaja con combinaciones, por eso aquí se comparan "
-        "salidas completas. Lo que aparece como fijo no lo decide quien planifica el viaje, o no "
-        "se puede cambiar sin crear un escenario que no existe.")
+        "El peso indica cuánto usa el modelo cada dato para ordenar los accidentes. No indica "
+        "cuánto sube o baja la gravedad al cambiarlo, porque el modelo trabaja con "
+        "combinaciones; por eso la pantalla compara salidas completas. Los datos fijos son los "
+        "que no decide quien planifica un viaje, o los que, cambiados por separado, darían un "
+        "escenario imposible.")
 
 with st.expander("Cómo calculamos este indicador"):
     st.markdown(
-        "**Puesto frente a 2024.** El modelo estima la gravedad **si hay un accidente**; no dice "
-        "que vayas a tenerlo. Su puntuación no es una probabilidad, así que no se enseña como "
-        "porcentaje: solo se dice en qué puesto queda cada salida frente a los "
+        "**Puesto frente a 2024.** El modelo estima la gravedad de un accidente que ya ha "
+        "ocurrido y no dice nada de si vas a tenerlo. Su puntuación no está calibrada como "
+        "probabilidad, por eso no se muestra en porcentaje. Lo que se enseña es el puesto de "
+        "cada salida entre los "
         f"{estilo.num(datos.referencia_gravedad().size)} accidentes con víctimas de 2024.")
     st.markdown(
         "**Niveles.** Los mismos cortes que en los tramos: Bajo por debajo del puesto 50, Medio "

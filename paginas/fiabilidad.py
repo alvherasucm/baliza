@@ -13,7 +13,7 @@ ui.cabecera_pagina(
     "Qué sabemos y qué no",
     "De dónde salen los datos, cómo se ha comprobado cada modelo y dónde están sus límites.",
     meta=[("Validación", "2024, un año que los modelos no vieron"),
-          ("Datos", "2016–2024 sin 2020")],
+          ("Datos", "2016-2024 sin 2020")],
 )
 
 ui.rejilla([
@@ -29,14 +29,14 @@ ui.cabecera_seccion("Cómo se construyó")
 ui.rejilla([
     ui.tarjeta_texto(
         "De dónde salen los datos",
-        "Microdatos de accidentes con víctimas de la DGT, 2016 a 2024, cruzados con los aforos "
-        "del Mapa de Tráfico del Ministerio. Una fila es un tramo de carretera en un año, con su "
-        "intensidad de tráfico y sus accidentes. 2020 queda fuera de todo el estudio."),
+        "Microdatos de accidentes con víctimas de la DGT de 2016 a 2024, cruzados con los "
+        "aforos del Mapa de Tráfico del Ministerio. Cada fila es un tramo de carretera en un año, "
+        "con su tráfico y sus accidentes. 2020 queda fuera de todo el estudio."),
     ui.tarjeta_texto(
         "Cómo se validó",
-        "Tapando 2024. Los modelos se entrenan con 2016 a 2022, se ajustan con 2023 y se miden "
-        "contra un año que no han visto nunca. Ninguna cifra de esta web está medida sobre los "
-        "mismos datos con los que se entrenó."),
+        "Se reservó 2024. Los modelos se entrenan con 2016-2022, se ajustan con 2023 y se miden "
+        "con 2024, un año que no han visto. Todas las métricas de acierto de esta web salen de "
+        "ese año."),
 ], plantilla="repeat(2, minmax(0, 1fr))")
 
 ui.cabecera_seccion("Qué hace cada modelo y cuánto se equivoca")
@@ -58,10 +58,10 @@ ui.tabla(pd.DataFrame([
 
 st.write("")
 ui.panel_info(
-    "El margen del modelo de tramos sobre ordenar por tráfico es estrecho: 0,818 contra 0,800. "
-    "Lo que aporta por encima del tráfico es el tipo de vía, la longitud del tramo y la "
-    "provincia, y ese margen se gana justo donde el tráfico engaña: carreteras convencionales "
-    "poco transitadas.", etiqueta="El punto ciego")
+    "El modelo de tramos supera por poco a ordenar solo por tráfico: 0,818 frente a 0,800. "
+    "Lo que añade es el tipo de vía, la longitud y la provincia, y esa ventaja aparece sobre "
+    "todo en carreteras convencionales con poco tráfico, donde el tráfico por sí solo engaña.",
+    etiqueta="El punto ciego")
 
 ui.cabecera_seccion("Lo que este sistema no puede hacer")
 ui.rejilla([ui.lista_simple([
@@ -71,10 +71,13 @@ ui.rejilla([ui.lista_simple([
     "No cubre Baleares, Canarias ni las carreteras forales del País Vasco.",
     "No predice que vayas a tener un accidente. Estima cuánto riesgo acumula un tramo al cabo "
     "de un año, y qué gravedad tendría un accidente si ocurriera.",
-    "No sustituye a la señalización ni a la DGT. No manda desviarse de ningún sitio.",
-    "No sitúa los tramos en un mapa: trabaja con carretera y punto kilométrico, sin "
+    "Solo cuenta accidentes con víctimas. Los de daños materiales no están en los datos.",
+    "No sabe cuánto tráfico hay a cada hora: el tráfico es una media diaria del año. Por eso "
+    "no dice a qué hora es más probable tener un accidente, solo cómo de grave sería.",
+    "No sustituye a la señalización ni a la DGT, y no manda desviarse de ningún sitio.",
+    "No sitúa los tramos en un mapa. Trabaja con carretera y punto kilométrico, sin "
     "coordenadas.",
 ])], plantilla="1fr")
 
-ui.panel_info("Cada pantalla que da un número lleva al lado qué haría cualquiera a ojo y cuánto "
-              "nos equivocamos. Aquí está todo junto.")
+ui.panel_info("Las pantallas con cifras enseñan al lado qué haría cualquiera a ojo y cuánto se "
+              "equivoca el modelo. Esta página lo reúne todo.")

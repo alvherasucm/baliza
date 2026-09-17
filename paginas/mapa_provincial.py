@@ -30,7 +30,7 @@ encima = int((p24.indice > 100).sum())
 
 ui.cabecera_pagina(
     "Mapa provincial",
-    f"{encima} provincias superan el riesgo relativo nacional",
+    f"{encima} provincias están por encima de la media de España",
     "Comparamos el riesgo observado con el esperado según el tráfico recorrido. Pulsa una "
     "provincia para ver su detalle.",
     meta=[("Año", str(datos.ANIO)), ("Provincias", str(len(p24))), ("Referencia", "España = 100")],
@@ -123,8 +123,8 @@ with derecha:
             st.session_state["provincia_elegida"] = fila.PROV
             st.switch_page(st.session_state["paginas"]["provincia"])
 
-ui.cabecera_seccion("Dónde está el riesgo relativo",
-                    "Las provincias con más accidentes por kilómetro recorrido.")
+ui.cabecera_seccion("Las cinco provincias con el índice más alto",
+                    "Accidentes por kilómetro recorrido, con España = 100.")
 lista, resumen = st.columns([2.1, 1], gap="medium")
 with lista:
     ui.tabla(p24.nlargest(5, "indice"), [
@@ -146,5 +146,6 @@ with st.expander("Cómo calculamos este indicador"):
         "la media de España del mismo año, multiplicado por 100. Por encima de 100 hay más "
         "accidentes de los esperables para el tráfico recorrido.")
     st.markdown(
-        "**Qué compara.** Provincias, no tramos: los datos del proyecto no incluyen coordenadas "
-        "de carretera. Geometría provincial: Code for America, licencia MIT.")
+        "**Qué compara.** Solo provincias. Los tramos no se pueden dibujar porque los datos del "
+        "proyecto no traen coordenadas de las carreteras. Geometría provincial: Code for "
+        "America, licencia MIT.")
