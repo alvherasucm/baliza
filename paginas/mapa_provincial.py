@@ -9,6 +9,8 @@ se acerca. El color, la escala y las cifras son los mismos que con Plotly.
 
 2D y no 3D: con altura, unas provincias tapan a otras y la perspectiva deforma
 la comparacion, y la altura repetiria lo que ya dice el color."""
+import copy
+
 import altair as alt
 import branca.colormap as bcm
 import folium
@@ -69,6 +71,9 @@ CSS_MAPA = f"""<style>
 .leaflet-control-attribution a {{ color: {estilo.PRIMARIO} !important; }}
 </style>"""
 
+# Cambiar este valor invalida el mapa guardado en cache sin reiniciar el servidor.
+VERSION_MAPA = "v2-" + str(len(CSS_MAPA))
+
 ESTILO_FICHA = (f"background: {estilo.SUPERFICIE}; border: 1px solid {estilo.BORDE};"
                 f"border-radius: 10px; box-shadow: 0 10px 28px rgba(0, 0, 0, .45);"
                 f"color: {estilo.TINTA}; font-family: {estilo.FUENTE}; font-size: 13px;"
@@ -111,10 +116,14 @@ def limites(capa: dict) -> list:
 
 
 @st.cache_resource(show_spinner=False)
-def mapa_base(_capa: dict, _encuadre: list, firma: int) -> folium.Map:
+def mapa_base(_capa: dict, _encuadre: list, firma: str) -> folium.Map:
     """El mapa se construye una vez y se reutiliza. folium genera identificadores
     nuevos en cada llamada, y si el HTML cambia el componente rehace el mapa y
-    pierde el zoom que tuviera el usuario. La provincia marcada va aparte."""
+    pierde el zoom que tuviera el usuario. La provincia marcada va aparte.
+
+    Lo que sale de aqui no se entrega nunca tal cual: st_folium engancha la capa de
+    seleccion al mapa que recibe, y ese enganche sobrevive en cache. A la segunda
+    vuelta el JavaScript queda con una referencia rota y el mapa sale en blanco."""
     mapa = folium.Map(tiles="OpenStreetMap", zoom_control=True, control_scale=False)
     mapa.get_root().header.add_child(folium.Element(CSS_MAPA))
     folium.GeoJson(
@@ -179,7 +188,7 @@ if "sel_provincia_mapa" not in st.session_state:
 izquierda, derecha = st.columns([2.1, 1], gap="medium")
 
 with izquierda, ui.contenedor_grafico("mapa_provincial"):
-    mapa = mapa_base(CAPA, limites(CAPA), hash(tuple(zip(p24.cod_prov, p24.color))))
+    mapa = copy.deepcopy(mapa_base(CAPA, limites(CAPA), VERSION_MAPA))
     evento = st_folium(mapa, key="mapa_provincial", height=600, use_container_width=True,
                        feature_group_to_add=marca(st.session_state.sel_provincia_mapa),
                        returned_objects=["last_active_drawing"])
