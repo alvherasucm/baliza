@@ -1,171 +1,863 @@
 {
   "A-1": {
-    "nombre": "Madrid - Miranda de Ebro",
+    "nombre": "Madrid - Burgos",
     "hitos": [
-      {"ciudad": "Madrid", "pk": 12},
-      {"ciudad": "Buitrago del Lozoya", "pk": 75},
-      {"ciudad": "Aranda de Duero", "pk": 158},
-      {"ciudad": "Burgos", "pk": 235},
-      {"ciudad": "Miranda de Ebro", "pk": 318}
+      {
+        "ciudad": "Madrid",
+        "pk": 12
+      },
+      {
+        "ciudad": "Buitrago del Lozoya",
+        "pk": 75
+      },
+      {
+        "ciudad": "Aranda de Duero",
+        "pk": 158
+      },
+      {
+        "ciudad": "Burgos",
+        "pk": 235
+      }
     ]
   },
   "A-2": {
-    "nombre": "Madrid - Girona",
+    "nombre": "Madrid - Zaragoza",
     "hitos": [
-      {"ciudad": "Madrid", "pk": 6},
-      {"ciudad": "Guadalajara", "pk": 55},
-      {"ciudad": "Medinaceli", "pk": 151},
-      {"ciudad": "Zaragoza", "pk": 313},
-      {"ciudad": "Lleida", "pk": 458},
-      {"ciudad": "Barcelona", "pk": 610},
-      {"ciudad": "Girona", "pk": 734}
+      {
+        "ciudad": "Madrid",
+        "pk": 6
+      },
+      {
+        "ciudad": "Guadalajara",
+        "pk": 55
+      },
+      {
+        "ciudad": "Medinaceli",
+        "pk": 151
+      },
+      {
+        "ciudad": "Calatayud",
+        "pk": 235
+      },
+      {
+        "ciudad": "La Almunia de Doña Godina",
+        "pk": 268
+      },
+      {
+        "ciudad": "Zaragoza",
+        "pk": 313
+      }
     ]
   },
   "A-3": {
     "nombre": "Madrid - Valencia",
     "hitos": [
-      {"ciudad": "Madrid", "pk": 4},
-      {"ciudad": "Tarancón", "pk": 82},
-      {"ciudad": "Motilla del Palancar", "pk": 211},
-      {"ciudad": "Requena", "pk": 289},
-      {"ciudad": "Valencia", "pk": 352}
+      {
+        "ciudad": "Madrid",
+        "pk": 4
+      },
+      {
+        "ciudad": "Tarancón",
+        "pk": 82
+      },
+      {
+        "ciudad": "Honrubia",
+        "pk": 150
+      },
+      {
+        "ciudad": "Motilla del Palancar",
+        "pk": 211
+      },
+      {
+        "ciudad": "Requena",
+        "pk": 289
+      },
+      {
+        "ciudad": "Valencia",
+        "pk": 352
+      }
     ]
   },
   "A-4": {
     "nombre": "Madrid - Cádiz",
     "hitos": [
-      {"ciudad": "Madrid", "pk": 4},
-      {"ciudad": "Aranjuez", "pk": 45},
-      {"ciudad": "Bailén", "pk": 294},
-      {"ciudad": "Córdoba", "pk": 396},
-      {"ciudad": "Sevilla", "pk": 535},
-      {"ciudad": "Jerez de la Frontera", "pk": 635},
-      {"ciudad": "Cádiz", "pk": 669}
+      {
+        "ciudad": "Madrid",
+        "pk": 4
+      },
+      {
+        "ciudad": "Aranjuez",
+        "pk": 45
+      },
+      {
+        "ciudad": "Ocaña",
+        "pk": 60
+      },
+      {
+        "ciudad": "Madridejos",
+        "pk": 120
+      },
+      {
+        "ciudad": "Manzanares",
+        "pk": 175
+      },
+      {
+        "ciudad": "Valdepeñas",
+        "pk": 200
+      },
+      {
+        "ciudad": "La Carolina",
+        "pk": 270
+      },
+      {
+        "ciudad": "Bailén",
+        "pk": 294
+      },
+      {
+        "ciudad": "Córdoba",
+        "pk": 396
+      },
+      {
+        "ciudad": "Écija",
+        "pk": 460
+      },
+      {
+        "ciudad": "Sevilla",
+        "pk": 535
+      },
+      {
+        "ciudad": "Jerez de la Frontera",
+        "pk": 635
+      },
+      {
+        "ciudad": "Cádiz",
+        "pk": 669
+      }
     ]
   },
   "A-5": {
     "nombre": "Madrid - Badajoz",
     "hitos": [
-      {"ciudad": "Madrid", "pk": 10},
-      {"ciudad": "Talavera de la Reina", "pk": 114},
-      {"ciudad": "Trujillo", "pk": 253},
-      {"ciudad": "Mérida", "pk": 341},
-      {"ciudad": "Badajoz", "pk": 400}
-    ]
-  },
-  "AP-7": {
-    "nombre": "Manilva - Málaga",
-    "provincia": "Málaga",
-    "hitos": [
-      {"ciudad": "Manilva", "pk": 137},
-      {"ciudad": "Estepona", "pk": 157},
-      {"ciudad": "Marbella", "pk": 186},
-      {"ciudad": "Fuengirola", "pk": 212},
-      {"ciudad": "Málaga", "pk": 229}
+      {
+        "ciudad": "Madrid",
+        "pk": 10
+      },
+      {
+        "ciudad": "Talavera de la Reina",
+        "pk": 114
+      },
+      {
+        "ciudad": "Navalmoral de la Mata",
+        "pk": 180
+      },
+      {
+        "ciudad": "Trujillo",
+        "pk": 253
+      },
+      {
+        "ciudad": "Mérida",
+        "pk": 341
+      },
+      {
+        "ciudad": "Badajoz",
+        "pk": 400
+      }
     ]
   },
   "A-6": {
     "nombre": "Madrid - A Coruña",
     "hitos": [
-      {"ciudad": "Madrid", "pk": 7},
-      {"ciudad": "Collado Villalba", "pk": 39},
-      {"ciudad": "Tordesillas", "pk": 181},
-      {"ciudad": "Benavente", "pk": 267},
-      {"ciudad": "Ponferrada", "pk": 382},
-      {"ciudad": "Lugo", "pk": 500},
-      {"ciudad": "A Coruña", "pk": 583}
-    ]
-  },
-  "A-8": {
-    "nombre": "Santander - Ribadeo",
-    "hitos": [
-      {"ciudad": "Santander", "pk": 200},
-      {"ciudad": "Torrelavega", "pk": 228},
-      {"ciudad": "Llanes", "pk": 300},
-      {"ciudad": "Gijón", "pk": 385},
-      {"ciudad": "Avilés", "pk": 406},
-      {"ciudad": "Ribadeo", "pk": 508}
-    ]
-  },
-  "A-66": {
-    "nombre": "Ruta de la Plata: Gijón - Sevilla",
-    "hitos": [
-      {"ciudad": "Gijón", "pk": 12},
-      {"ciudad": "Oviedo", "pk": 30},
-      {"ciudad": "León", "pk": 143},
-      {"ciudad": "Benavente", "pk": 267},
-      {"ciudad": "Zamora", "pk": 277},
-      {"ciudad": "Salamanca", "pk": 340},
-      {"ciudad": "Cáceres", "pk": 551},
-      {"ciudad": "Mérida", "pk": 630},
-      {"ciudad": "Sevilla", "pk": 809}
+      {
+        "ciudad": "Madrid",
+        "pk": 7
+      },
+      {
+        "ciudad": "Collado Villalba",
+        "pk": 39
+      },
+      {
+        "ciudad": "Adanero",
+        "pk": 120
+      },
+      {
+        "ciudad": "Medina del Campo",
+        "pk": 155
+      },
+      {
+        "ciudad": "Tordesillas",
+        "pk": 181
+      },
+      {
+        "ciudad": "Benavente",
+        "pk": 267
+      },
+      {
+        "ciudad": "Ponferrada",
+        "pk": 382
+      },
+      {
+        "ciudad": "Lugo",
+        "pk": 500
+      },
+      {
+        "ciudad": "A Coruña",
+        "pk": 583
+      }
     ]
   },
   "A-7": {
     "nombre": "Mediterráneo: Pulpí - Adra (Almería)",
     "provincia": "Almería",
     "hitos": [
-      {"ciudad": "Pulpí", "pk": 665},
-      {"ciudad": "Vera", "pk": 700},
-      {"ciudad": "Níjar", "pk": 777},
-      {"ciudad": "Almería", "pk": 790},
-      {"ciudad": "El Ejido", "pk": 825},
-      {"ciudad": "Adra", "pk": 845}
+      {
+        "ciudad": "Pulpí",
+        "pk": 665
+      },
+      {
+        "ciudad": "Vera",
+        "pk": 700
+      },
+      {
+        "ciudad": "Níjar",
+        "pk": 777
+      },
+      {
+        "ciudad": "Almería",
+        "pk": 790
+      },
+      {
+        "ciudad": "El Ejido",
+        "pk": 825
+      },
+      {
+        "ciudad": "Adra",
+        "pk": 845
+      }
+    ]
+  },
+  "A-8": {
+    "nombre": "Santander - Ribadeo",
+    "hitos": [
+      {
+        "ciudad": "Santander",
+        "pk": 200
+      },
+      {
+        "ciudad": "Torrelavega",
+        "pk": 228
+      },
+      {
+        "ciudad": "Llanes",
+        "pk": 300
+      },
+      {
+        "ciudad": "Gijón",
+        "pk": 385
+      },
+      {
+        "ciudad": "Avilés",
+        "pk": 406
+      },
+      {
+        "ciudad": "Ribadeo",
+        "pk": 508
+      }
     ]
   },
   "A-23": {
     "nombre": "Sagunto - Huesca",
     "hitos": [
-      {"ciudad": "Sagunto", "pk": 0.2},
-      {"ciudad": "Teruel", "pk": 115},
-      {"ciudad": "Calamocha", "pk": 190},
-      {"ciudad": "Zaragoza", "pk": 285},
-      {"ciudad": "Huesca", "pk": 358}
+      {
+        "ciudad": "Sagunto",
+        "pk": 0.2
+      },
+      {
+        "ciudad": "Teruel",
+        "pk": 115
+      },
+      {
+        "ciudad": "Calamocha",
+        "pk": 190
+      },
+      {
+        "ciudad": "Zaragoza",
+        "pk": 285
+      },
+      {
+        "ciudad": "Huesca",
+        "pk": 358
+      }
     ]
   },
   "A-62": {
     "nombre": "Burgos - Salamanca",
     "hitos": [
-      {"ciudad": "Burgos", "pk": 8},
-      {"ciudad": "Palencia", "pk": 82},
-      {"ciudad": "Valladolid", "pk": 120},
-      {"ciudad": "Tordesillas", "pk": 151},
-      {"ciudad": "Salamanca", "pk": 240}
+      {
+        "ciudad": "Burgos",
+        "pk": 8
+      },
+      {
+        "ciudad": "Palencia",
+        "pk": 82
+      },
+      {
+        "ciudad": "Valladolid",
+        "pk": 120
+      },
+      {
+        "ciudad": "Tordesillas",
+        "pk": 151
+      },
+      {
+        "ciudad": "Salamanca",
+        "pk": 240
+      }
+    ]
+  },
+  "A-66": {
+    "nombre": "Ruta de la Plata: Gijón - Sevilla",
+    "hitos": [
+      {
+        "ciudad": "Gijón",
+        "pk": 12
+      },
+      {
+        "ciudad": "Oviedo",
+        "pk": 30
+      },
+      {
+        "ciudad": "León",
+        "pk": 143
+      },
+      {
+        "ciudad": "La Bañeza",
+        "pk": 180
+      },
+      {
+        "ciudad": "Benavente",
+        "pk": 267
+      },
+      {
+        "ciudad": "Zamora",
+        "pk": 277
+      },
+      {
+        "ciudad": "Salamanca",
+        "pk": 340
+      },
+      {
+        "ciudad": "Béjar",
+        "pk": 400
+      },
+      {
+        "ciudad": "Plasencia",
+        "pk": 480
+      },
+      {
+        "ciudad": "Cáceres",
+        "pk": 551
+      },
+      {
+        "ciudad": "Mérida",
+        "pk": 630
+      },
+      {
+        "ciudad": "Zafra",
+        "pk": 680
+      },
+      {
+        "ciudad": "Santa Olalla del Cala",
+        "pk": 750
+      },
+      {
+        "ciudad": "Sevilla",
+        "pk": 809
+      }
+    ]
+  },
+  "AP-1": {
+    "nombre": "Burgos - Miranda de Ebro",
+    "hitos": [
+      {
+        "ciudad": "Burgos",
+        "pk": 5
+      },
+      {
+        "ciudad": "Briviesca",
+        "pk": 35
+      },
+      {
+        "ciudad": "Pancorbo",
+        "pk": 60
+      },
+      {
+        "ciudad": "Miranda de Ebro",
+        "pk": 75
+      }
+    ]
+  },
+  "AP-2": {
+    "nombre": "Zaragoza - El Vendrell",
+    "hitos": [
+      {
+        "ciudad": "Zaragoza",
+        "pk": 20
+      },
+      {
+        "ciudad": "Bujaraloz",
+        "pk": 65
+      },
+      {
+        "ciudad": "Fraga",
+        "pk": 105
+      },
+      {
+        "ciudad": "Lleida",
+        "pk": 145
+      },
+      {
+        "ciudad": "Les Borges Blanques",
+        "pk": 165
+      },
+      {
+        "ciudad": "Montblanc",
+        "pk": 200
+      },
+      {
+        "ciudad": "El Vendrell",
+        "pk": 232
+      }
+    ]
+  },
+  "AP-7": {
+    "nombre": "Manilva - Málaga",
+    "provincia": "Málaga",
+    "hitos": [
+      {
+        "ciudad": "Manilva",
+        "pk": 137
+      },
+      {
+        "ciudad": "Estepona",
+        "pk": 157
+      },
+      {
+        "ciudad": "Marbella",
+        "pk": 186
+      },
+      {
+        "ciudad": "Fuengirola",
+        "pk": 212
+      },
+      {
+        "ciudad": "Málaga",
+        "pk": 229
+      }
+    ]
+  },
+  "N-122": {
+    "nombre": "Zaragoza - Alcañices",
+    "hitos": [
+      {
+        "ciudad": "Gallur",
+        "pk": 60
+      },
+      {
+        "ciudad": "Tarazona",
+        "pk": 90
+      },
+      {
+        "ciudad": "Ágreda",
+        "pk": 105
+      },
+      {
+        "ciudad": "Soria",
+        "pk": 175
+      },
+      {
+        "ciudad": "El Burgo de Osma",
+        "pk": 230
+      },
+      {
+        "ciudad": "Aranda de Duero",
+        "pk": 285
+      },
+      {
+        "ciudad": "Peñafiel",
+        "pk": 320
+      },
+      {
+        "ciudad": "Valladolid",
+        "pk": 400
+      },
+      {
+        "ciudad": "Toro",
+        "pk": 440
+      },
+      {
+        "ciudad": "Zamora",
+        "pk": 480
+      },
+      {
+        "ciudad": "Alcañices",
+        "pk": 530
+      }
     ]
   },
   "N-232": {
-    "nombre": "Vinaròs - Zaragoza - Logroño",
+    "nombre": "Vinaròs - Zaragoza",
     "hitos": [
-      {"ciudad": "Vinaròs", "pk": 0},
-      {"ciudad": "Morella", "pk": 65},
-      {"ciudad": "Alcañiz", "pk": 140},
-      {"ciudad": "Zaragoza", "pk": 250},
-      {"ciudad": "Tudela", "pk": 330},
-      {"ciudad": "Logroño", "pk": 420}
+      {
+        "ciudad": "Vinaròs",
+        "pk": 0
+      },
+      {
+        "ciudad": "Morella",
+        "pk": 65
+      },
+      {
+        "ciudad": "Alcañiz",
+        "pk": 140
+      },
+      {
+        "ciudad": "Zaragoza",
+        "pk": 250
+      }
+    ]
+  },
+  "N-234": {
+    "nombre": "Sagunto - Burgos",
+    "hitos": [
+      {
+        "ciudad": "Sagunto",
+        "pk": 3
+      },
+      {
+        "ciudad": "Segorbe",
+        "pk": 25
+      },
+      {
+        "ciudad": "Jérica",
+        "pk": 40
+      },
+      {
+        "ciudad": "Barracas",
+        "pk": 60
+      },
+      {
+        "ciudad": "Sarrión",
+        "pk": 80
+      },
+      {
+        "ciudad": "Teruel",
+        "pk": 125
+      },
+      {
+        "ciudad": "Monreal del Campo",
+        "pk": 175
+      },
+      {
+        "ciudad": "Calamocha",
+        "pk": 195
+      },
+      {
+        "ciudad": "Daroca",
+        "pk": 230
+      },
+      {
+        "ciudad": "Calatayud",
+        "pk": 270
+      },
+      {
+        "ciudad": "Ágreda",
+        "pk": 330
+      },
+      {
+        "ciudad": "Soria",
+        "pk": 395
+      },
+      {
+        "ciudad": "Salas de los Infantes",
+        "pk": 450
+      },
+      {
+        "ciudad": "Burgos",
+        "pk": 480
+      }
     ]
   },
   "N-260": {
     "nombre": "Eje Pirenaico: Girona - Huesca",
     "hitos": [
-      {"ciudad": "Figueres", "pk": 29},
-      {"ciudad": "Olot", "pk": 88},
-      {"ciudad": "Ripoll", "pk": 118},
-      {"ciudad": "Puigcerdà", "pk": 179},
-      {"ciudad": "La Seu d'Urgell", "pk": 230},
-      {"ciudad": "Sort", "pk": 281},
-      {"ciudad": "Aínsa", "pk": 436},
-      {"ciudad": "Sabiñánigo", "pk": 487}
+      {
+        "ciudad": "Figueres",
+        "pk": 29
+      },
+      {
+        "ciudad": "Olot",
+        "pk": 88
+      },
+      {
+        "ciudad": "Ripoll",
+        "pk": 118
+      },
+      {
+        "ciudad": "Puigcerdà",
+        "pk": 179
+      },
+      {
+        "ciudad": "La Seu d'Urgell",
+        "pk": 230
+      },
+      {
+        "ciudad": "Sort",
+        "pk": 281
+      },
+      {
+        "ciudad": "El Pont de Suert",
+        "pk": 360
+      },
+      {
+        "ciudad": "Aínsa",
+        "pk": 436
+      },
+      {
+        "ciudad": "Sabiñánigo",
+        "pk": 487
+      }
+    ]
+  },
+  "N-322": {
+    "nombre": "Linares - Requena",
+    "hitos": [
+      {
+        "ciudad": "Linares",
+        "pk": 150
+      },
+      {
+        "ciudad": "Úbeda",
+        "pk": 178
+      },
+      {
+        "ciudad": "Villacarrillo",
+        "pk": 200
+      },
+      {
+        "ciudad": "Puente de Génave",
+        "pk": 240
+      },
+      {
+        "ciudad": "Elche de la Sierra",
+        "pk": 290
+      },
+      {
+        "ciudad": "Albacete",
+        "pk": 380
+      },
+      {
+        "ciudad": "Casas Ibáñez",
+        "pk": 420
+      },
+      {
+        "ciudad": "Requena",
+        "pk": 450
+      }
     ]
   },
   "N-432": {
     "nombre": "Badajoz - Córdoba - Granada",
     "hitos": [
-      {"ciudad": "Badajoz", "pk": 1},
-      {"ciudad": "Zafra", "pk": 70},
-      {"ciudad": "Fuente Obejuna", "pk": 190},
-      {"ciudad": "Córdoba", "pk": 260},
-      {"ciudad": "Alcalá la Real", "pk": 390},
-      {"ciudad": "Granada", "pk": 430}
+      {
+        "ciudad": "Badajoz",
+        "pk": 1
+      },
+      {
+        "ciudad": "Zafra",
+        "pk": 70
+      },
+      {
+        "ciudad": "Fuente Obejuna",
+        "pk": 190
+      },
+      {
+        "ciudad": "Córdoba",
+        "pk": 260
+      },
+      {
+        "ciudad": "Baena",
+        "pk": 320
+      },
+      {
+        "ciudad": "Alcalá la Real",
+        "pk": 390
+      },
+      {
+        "ciudad": "Granada",
+        "pk": 430
+      }
+    ]
+  },
+  "N-502": {
+    "nombre": "Ávila - Córdoba",
+    "hitos": [
+      {
+        "ciudad": "Ávila",
+        "pk": 10
+      },
+      {
+        "ciudad": "Arenas de San Pedro",
+        "pk": 60
+      },
+      {
+        "ciudad": "Talavera de la Reina",
+        "pk": 110
+      },
+      {
+        "ciudad": "Puente del Arzobispo",
+        "pk": 150
+      },
+      {
+        "ciudad": "Guadalupe",
+        "pk": 195
+      },
+      {
+        "ciudad": "Cabeza del Buey",
+        "pk": 240
+      },
+      {
+        "ciudad": "Almadén",
+        "pk": 280
+      },
+      {
+        "ciudad": "Espiel",
+        "pk": 350
+      },
+      {
+        "ciudad": "Córdoba",
+        "pk": 388
+      }
+    ]
+  },
+  "N-630": {
+    "nombre": "Ruta de la Plata: Mieres - Sevilla",
+    "hitos": [
+      {
+        "ciudad": "Mieres",
+        "pk": 45
+      },
+      {
+        "ciudad": "La Robla",
+        "pk": 120
+      },
+      {
+        "ciudad": "León",
+        "pk": 145
+      },
+      {
+        "ciudad": "La Bañeza",
+        "pk": 200
+      },
+      {
+        "ciudad": "Benavente",
+        "pk": 220
+      },
+      {
+        "ciudad": "Zamora",
+        "pk": 270
+      },
+      {
+        "ciudad": "Salamanca",
+        "pk": 340
+      },
+      {
+        "ciudad": "Plasencia",
+        "pk": 455
+      },
+      {
+        "ciudad": "Cáceres",
+        "pk": 545
+      },
+      {
+        "ciudad": "Mérida",
+        "pk": 615
+      },
+      {
+        "ciudad": "Zafra",
+        "pk": 680
+      },
+      {
+        "ciudad": "Santa Olalla del Cala",
+        "pk": 750
+      },
+      {
+        "ciudad": "Sevilla",
+        "pk": 800
+      }
+    ]
+  },
+  "N-634": {
+    "nombre": "Cantábrico: Santander - A Coruña",
+    "hitos": [
+      {
+        "ciudad": "Colindres",
+        "pk": 160
+      },
+      {
+        "ciudad": "Santander",
+        "pk": 195
+      },
+      {
+        "ciudad": "Torrelavega",
+        "pk": 240
+      },
+      {
+        "ciudad": "San Vicente de la Barquera",
+        "pk": 270
+      },
+      {
+        "ciudad": "Llanes",
+        "pk": 297
+      },
+      {
+        "ciudad": "Ribadesella",
+        "pk": 340
+      },
+      {
+        "ciudad": "Villaviciosa",
+        "pk": 380
+      },
+      {
+        "ciudad": "Gijón",
+        "pk": 400
+      },
+      {
+        "ciudad": "Avilés",
+        "pk": 430
+      },
+      {
+        "ciudad": "Luarca",
+        "pk": 500
+      },
+      {
+        "ciudad": "Ribadeo",
+        "pk": 560
+      },
+      {
+        "ciudad": "Mondoñedo",
+        "pk": 605
+      },
+      {
+        "ciudad": "Vilalba",
+        "pk": 635
+      },
+      {
+        "ciudad": "Betanzos",
+        "pk": 675
+      },
+      {
+        "ciudad": "A Coruña",
+        "pk": 705
+      }
     ]
   }
 }

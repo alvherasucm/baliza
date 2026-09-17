@@ -9,10 +9,8 @@ import sys
 import pandas as pd
 
 
-CARRETERAS = (
-    "A-1", "A-2", "A-3", "A-4", "A-5", "AP-7", "A-6", "A-8", "A-66",
-    "A-7", "A-23", "A-62", "N-232", "N-260", "N-432",
-)
+SALTO_MAXIMO_KM = 120.0
+
 
 def _columna(tabla: pd.DataFrame, *candidatas: str) -> str:
     por_minusculas = {str(col).lower(): col for col in tabla.columns}
@@ -22,77 +20,113 @@ def _columna(tabla: pd.DataFrame, *candidatas: str) -> str:
     raise ValueError(f"Falta una de estas columnas: {', '.join(candidatas)}")
 
 
-def auditar(ruta_tabla: str | Path, ruta_json: str | Path) -> list[str]:
+def _tabla_2024(ruta_tabla: str | Path) -> pd.DataFrame:
     tabla = pd.read_csv(ruta_tabla, sep=None, engine="python")
+    tabla.columns = [str(col).replace("﻿", "") for col in tabla.columns]
+    if any(str(col).lower() == "anyo" for col in tabla.columns):
+        col_anio = _columna(tabla, "ANYO")
+        tabla = tabla.loc[pd.to_numeric(tabla[col_anio], errors="coerce").eq(2024)]
+    return tabla
+
+
+def _tramos_del_corredor(tabla, carretera, definicion, cols):
+    """Las filas que Tu ruta puede llegar a pintar en ese corredor."""
+    col_carretera, col_pk_inicio, col_pk_fin, col_provincia = cols
+    tramos = tabla.loc[tabla[col_carretera].eq(carretera)].copy()
+    provincia = definicion.get("provincia")
+    if provincia:
+        tramos = tramos.loc[tramos[col_provincia].eq(provincia)]
+    pks = [hito.get("pk") for hito in definicion.get("hitos", [])]
+    inicios = pd.to_numeric(tramos[col_pk_inicio], errors="coerce")
+    finales = pd.to_numeric(tramos[col_pk_fin], errors="coerce")
+    limites = pd.concat([inicios, finales], axis=1)
+    return tramos.loc[limites.min(axis=1).le(max(pks)) & limites.max(axis=1).ge(min(pks))]
+
+
+def cobertura(ruta_tabla: str | Path, ruta_json: str | Path) -> dict:
+    """Kilómetros ruteables: los que caen dentro de algún corredor, ya filtrados."""
+    tabla = _tabla_2024(ruta_tabla)
+    corredores = json.loads(Path(ruta_json).read_text(encoding="utf-8"))
+    cols = (
+        _columna(tabla, "carretera", "VIA_NORM"),
+        _columna(tabla, "pk_inicio_km", "PK_INICIO", "pk_inicio"),
+        _columna(tabla, "pk_fin_km", "PK_FIN", "pk_fin"),
+        _columna(tabla, "provincia", "PROVINCIA"),
+    )
+    _, col_pk_inicio, col_pk_fin, _ = cols
+    largo = lambda t: (
+        pd.to_numeric(t[col_pk_fin], errors="coerce")
+        - pd.to_numeric(t[col_pk_inicio], errors="coerce")
+    ).abs().sum()
+    dentro = sum(
+        largo(_tramos_del_corredor(tabla, carretera, definicion, cols))
+        for carretera, definicion in corredores.items()
+    )
+    return {"km_corredores": float(dentro), "km_red": float(largo(tabla)), "corredores": len(corredores)}
+
+
+def auditar(ruta_tabla: str | Path, ruta_json: str | Path) -> list[str]:
+    tabla = _tabla_2024(ruta_tabla)
     corredores = json.loads(Path(ruta_json).read_text(encoding="utf-8"))
     problemas: list[str] = []
 
-    if tuple(corredores) != CARRETERAS:
-        problemas.append("Las carreteras o su orden no coinciden con la lista oficial de corredores.")
+    if not corredores:
+        return ["corredores.json está vacío."]
 
     col_carretera = _columna(tabla, "carretera", "VIA_NORM")
     col_pk_inicio = _columna(tabla, "pk_inicio_km", "PK_INICIO", "pk_inicio")
     col_pk_fin = _columna(tabla, "pk_fin_km", "PK_FIN", "pk_fin")
-
     col_provincia = _columna(tabla, "provincia", "PROVINCIA")
 
-    base = tabla.copy()
-    if any(str(col).lower() == "anyo" for col in tabla.columns):
-        col_anio = _columna(tabla, "ANYO")
-        base = base.loc[pd.to_numeric(base[col_anio], errors="coerce").eq(2024)]
-
-    for carretera in CARRETERAS:
-        tramos_carretera = base.loc[base[col_carretera].eq(carretera)].copy()
-        provincia = corredores.get(carretera, {}).get("provincia")
+    for carretera, definicion in corredores.items():
+        tramos_carretera = tabla.loc[tabla[col_carretera].eq(carretera)].copy()
+        provincia = definicion.get("provincia")
         if provincia is not None and not isinstance(provincia, str):
             problemas.append(f"{carretera}: el campo provincia debe ser texto.")
             continue
 
-        hitos = corredores.get(carretera, {}).get("hitos", [])
+        hitos = definicion.get("hitos", [])
         pks = [hito.get("pk") for hito in hitos]
-        if not pks or any(not isinstance(pk, (int, float)) for pk in pks):
-            problemas.append(f"{carretera}: los hitos no contienen PK numéricos.")
+        if len(pks) < 2 or any(not isinstance(pk, (int, float)) for pk in pks):
+            problemas.append(f"{carretera}: hacen falta al menos dos hitos con PK numérico.")
             continue
         if pks != sorted(pks) or len(pks) != len(set(pks)):
             problemas.append(f"{carretera}: los PK deben ser crecientes y no repetirse.")
 
-        pk_min_corredor = min(pks)
-        pk_max_corredor = max(pks)
-        inicios = pd.to_numeric(tramos_carretera[col_pk_inicio], errors="coerce")
-        finales = pd.to_numeric(tramos_carretera[col_pk_fin], errors="coerce")
-        limite_inferior = pd.concat([inicios, finales], axis=1).min(axis=1)
-        limite_superior = pd.concat([inicios, finales], axis=1).max(axis=1)
-        dentro_del_corredor = tramos_carretera.loc[
-            limite_inferior.le(pk_max_corredor)
-            & limite_superior.ge(pk_min_corredor)
+        saltos = [
+            (hitos[i]["ciudad"], hitos[i + 1]["ciudad"], pks[i + 1] - pks[i])
+            for i in range(len(pks) - 1)
+            if pks[i + 1] - pks[i] > SALTO_MAXIMO_KM
         ]
+        for origen, destino, salto in saltos:
+            problemas.append(
+                f"{carretera}: de {origen} a {destino} hay {salto:g} km sin ninguna ciudad "
+                f"intermedia (el máximo son {SALTO_MAXIMO_KM:g})."
+            )
+
+        dentro_del_corredor = _tramos_del_corredor(tabla, carretera, definicion,
+                                                   (col_carretera, col_pk_inicio, col_pk_fin, col_provincia))
         if not provincia:
             intervalos = pd.DataFrame({
-                "pk_inicio": pd.to_numeric(
-                    dentro_del_corredor[col_pk_inicio], errors="coerce"
-                ),
-                "pk_fin": pd.to_numeric(
-                    dentro_del_corredor[col_pk_fin], errors="coerce"
-                ),
+                "pk_inicio": pd.to_numeric(dentro_del_corredor[col_pk_inicio], errors="coerce"),
+                "pk_fin": pd.to_numeric(dentro_del_corredor[col_pk_fin], errors="coerce"),
+                "provincia": dentro_del_corredor[col_provincia],
             }).dropna().sort_values("pk_inicio")
 
-            maximo_fin_anterior: float | None = None
-            hay_solape = False
+            abiertos: list[tuple[float, str]] = []
+            solape_entre_provincias = False
             for intervalo in intervalos.itertuples(index=False):
                 pk_inicio = float(intervalo.pk_inicio)
                 pk_fin = float(intervalo.pk_fin)
-                if maximo_fin_anterior is not None and pk_inicio < maximo_fin_anterior:
-                    hay_solape = True
+                abiertos = [(fin, prov) for fin, prov in abiertos if fin > pk_inicio]
+                if any(prov != intervalo.provincia for _, prov in abiertos):
+                    solape_entre_provincias = True
                     break
-                maximo_fin_anterior = (
-                    pk_fin
-                    if maximo_fin_anterior is None
-                    else max(maximo_fin_anterior, pk_fin)
-                )
+                abiertos.append((pk_fin, intervalo.provincia))
 
-            if hay_solape:
+            if solape_entre_provincias:
                 problemas.append(
-                    f"{carretera}: tramos con PK solapados entre provincias; "
+                    f"{carretera}: tramos de provincias distintas comparten PK; "
                     "falta el campo provincia"
                 )
 
@@ -119,4 +153,11 @@ if __name__ == "__main__":
     if fallos:
         print("\n".join(fallos))
         raise SystemExit(1)
-    print("Corredores válidos frente a las predicciones de tramos de 2024.")
+    resumen = cobertura(sys.argv[1], sys.argv[2])
+    miles = lambda n: f"{n:,.0f}".replace(",", ".")
+    porcentaje = f"{100 * resumen['km_corredores'] / resumen['km_red']:.1f}".replace(".", ",")
+    print(
+        f"Corredores válidos frente a las predicciones de tramos de 2024. "
+        f"{resumen['corredores']} corredores cubren {miles(resumen['km_corredores'])} km "
+        f"de los {miles(resumen['km_red'])} de la red ({porcentaje} %)."
+    )
