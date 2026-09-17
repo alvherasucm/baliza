@@ -11,6 +11,14 @@ from baliza import datos, estilo
 
 corredores = datos.corredores()
 tramos = datos.tramos_puntuados()
+acierto = datos.referencias_tramos()["modelo_final"]["roc_auc"]
+
+
+def _trafico(imd) -> str:
+    if np.isnan(imd):
+        return "sin aforo en 2024, tráfico estimado"
+    return f"{estilo.num(imd)} vehículos al día"
+
 
 ui.cabecera_pagina(
     "Tu ruta",
@@ -130,7 +138,7 @@ peores = valida.nlargest(3, "PROB_ACCIDENTE_TRAMO_ANIO")
 ui.lista_riesgo([
     (f"{fila.carretera}, km {fila.pk_inicio_km:.0f} a {fila.pk_fin_km:.0f} · {fila.provincia}",
      f"Entre el {100 - fila.percentil:.0f} % de tramos con más riesgo de España · "
-     f"{estilo.num(fila.longitud_km, 1)} km · {estilo.num(fila.imd_total)} vehículos al día",
+     f"{estilo.num(fila.longitud_km, 1)} km · {_trafico(fila.imd_total)}",
      fila.banda)
     for _, fila in peores.iterrows()
 ])
@@ -144,7 +152,8 @@ ui.conclusiones([
      "en la media de España."),
     ("Cuánto se equivoca",
      "Si se compara un tramo que tuvo accidentes en 2024 con otro que no, el modelo da más "
-     "riesgo al primero en 8 de cada 10 parejas (ROC-AUC 0,83)."),
+     f"riesgo al primero en {acierto * 10:.0f} de cada 10 parejas "
+     f"(ROC-AUC {estilo.num(acierto, 2)})."),
 ])
 
 st.write("")

@@ -1,5 +1,22 @@
 {
-  "imputacion": null,
+  "imputacion": {
+    "imd_total": {
+      "global": 7163.0,
+      "grupos": {
+        "Autopista_autovia": 17990.0,
+        "Convencional": 2786.5,
+        "Multicarril": 16126.0
+      }
+    },
+    "proporcion_pesados": {
+      "global": 0.1097087378640776,
+      "grupos": {
+        "Autopista_autovia": 0.1410697098858792,
+        "Convencional": 0.0986475735879077,
+        "Multicarril": 0.0482469928357517
+      }
+    }
+  },
   "predictores": [
     "log_imd_total",
     "log_longitud_pk",
@@ -7,10 +24,10 @@
     "provincia_norm",
     "tipo_via_modelo"
   ],
-  "version_datos": "v1",
+  "version_datos": "v2",
   "familia": "Random Forest",
   "configuracion": "Base",
-  "umbral_descriptivo": 0.3687964045151364,
+  "umbral_descriptivo": 0.3635011905542551,
   "horizonte": "Ocurrencia anual condicionada al tráfico del mismo año",
   "categorias": {
     "provincia": [
@@ -69,11 +86,11 @@
   },
   "rangos_train": {
     "log_imd_total": [
-      1.6094379124341005,
-      12.566540387707605
+      1.6094379124341003,
+      12.566540387707603
     ],
     "log_longitud_pk": [
-      -4.135166556742466,
+      -4.710530701644301,
       3.767898561163979
     ],
     "proporcion_pesados": [
@@ -84,23 +101,27 @@
   "software": {
     "python": "3.12.14",
     "sklearn": "1.9.0",
-    "xgboost": "3.4.1"
+    "xgboost": "3.4.1",
+    "numpy": "2.3.5",
+    "pandas": "2.3.3",
+    "scipy": "1.16.3",
+    "joblib": "1.6.0"
   },
   "objetivo": "HUBO_ACCIDENTE",
   "unidad": "tramo-año",
   "test_previamente_consultado": true,
-  "n_test_comun": 6730,
+  "n_test_comun": 6732,
   "n_cobertura": 7250,
   "estados_prediccion": {
-    "OK": 7248,
-    "DATOS_INSUFICIENTES": 2
+    "OK": 7250,
+    "DATOS_INSUFICIENTES": 0
   },
-  "metricas": "Train y valid originales; test solo sobre 6.730 IDs comunes, sin ampliar la evaluación",
+  "metricas": "Test v2 2024 sobre 6.732 tramos, incluidos dos con IMD imputada",
   "uso": "Ocurrencia anual condicionada al tráfico; no riesgo individual durante un viaje",
-  "politica_faltantes": "Sin imputación adicional: probabilidad vacía si faltan predictores",
+  "politica_faltantes": "IMD total y proporción de pesados se imputan por tipo de vía con parámetros aprendidos en entrenamiento; IMD_IMPUTADO identifica esos casos.",
   "geometria_incluida": false,
-  "fuente_cobertura": "C:\\Users\\Usuario\\Documents\\ChatGPT\\TFM\\resultados\\preparacion_comparacion\\20260913T225140\\v1_restrictivo\\Auditoria_Panel_IMD_vf.csv",
-  "fuente_sha256": "3a3b1d44e1a6444ad8a5fcf4ed60ed265ae339d63a71db2998fdc9f4cb798040",
+  "fuente_cobertura": "Auditoria_Panel_v2.csv",
+  "fuente_sha256": "daf92197453289ee97c6b139782b43cc8874b46d2a17a46b769e5af509c61e0e",
   "parametros_estimador": {
     "bootstrap": true,
     "ccp_alpha": 0.0,
@@ -121,5 +142,8 @@
     "random_state": 2026,
     "verbose": 0,
     "warm_start": false
-  }
+  },
+  "n_test_v2": 6732,
+  "n_accidentes_test": 9661,
+  "n_positivos_test": 3068
 }

@@ -24,6 +24,8 @@ ANIO = 2024
 COEFICIENTES_PROVINCIAS = MODELOS / "coeficientes_provincias.json"
 # Mismo corte que el aviso de crecimiento de la funcion de Miki
 UMBRAL_CAUTELA = 0.20
+# Por debajo de esta parte del trafico medido, el indice provincial se apoya en poca red
+UMBRAL_COBERTURA = 0.60
 VARIANTES_PROVINCIAS = {
     "pred_naive": ("Repetir el año anterior",
                    "Los accidentes del año anterior, tal cual"),
@@ -74,23 +76,25 @@ CODIGO_PROVINCIA = {
 
 @st.cache_data(show_spinner=False)
 def tramos_puntuados() -> pd.DataFrame:
-    """Los 7.250 tramos de 2024 con la probabilidad del modelo de Anna y el
-    contexto de la maestra (accidentes, longitud, tasa por 100 M veh-km)."""
-    pred = pd.read_csv(DATOS / "predicciones_tramos_2024.csv", sep=";", encoding="utf-8-sig")
-    maestra = maestra_completa()
-    m24 = maestra[maestra.ANYO == ANIO].copy()
-    m24["clave"] = _clave(m24.PROVINCIA, m24.VIA_NORM, m24.PK_INICIO, m24.PK_FIN)
-    pred["clave"] = _clave(pred.provincia, pred.carretera, pred.pk_inicio_km, pred.pk_fin_km)
+    """Los 7.250 tramos de 2024 con la probabilidad del modelo de Anna y los
+    accidentes de su tabla v2, que son las mismas etiquetas con las que se evalua.
 
-    df = pred.merge(
-        m24[["clave", "TIPO_VIA", "LONGITUD", "VEH_KM", "N_ACC", "TASA_100M"]],
-        on="clave", how="left")
+    Los 518 tramos que quedan fuera de la evaluacion no tienen recuento: N_ACC
+    va vacio y siguen en el ranking por riesgo estimado. VEH_KM se calcula igual
+    que en la maestra y queda vacio en los dos tramos con trafico imputado."""
+    pred = pd.read_csv(DATOS / "predicciones_tramos_2024.csv", sep=";", encoding="utf-8-sig")
+    acc = pd.read_csv(DATOS / "accidentes_tramos_2024.csv", sep=";", encoding="utf-8-sig")
+    df = pred.merge(acc[["TRAMO_ID", "N_ACCIDENTES", "TIPO_VIA_DETALLE"]],
+                    on="TRAMO_ID", how="left", validate="one_to_one")
     df["longitud_km"] = df.pk_fin_km - df.pk_inicio_km
+    df["N_ACC"] = df.N_ACCIDENTES
+    df["VEH_KM"] = df.imd_total * df.longitud_km * 365
+    df["TASA_100M"] = df.N_ACC / df.VEH_KM * 1e8
     df["acc_por_km"] = df.N_ACC / df.longitud_km.replace(0, np.nan)
     df["tipo_via_presentacion"] = (
         df["tipo_via"].map(TIPO_VIA_PRESENTACION).fillna("Tipo de vía no disponible")
     )
-    df["tipo_via_detalle"] = df["TIPO_VIA"]
+    df["tipo_via_detalle"] = df["TIPO_VIA_DETALLE"]
     df["banda"] = banda_riesgo(df.PROB_ACCIDENTE_TRAMO_ANIO)
     df["percentil"] = percentil_2024(df.PROB_ACCIDENTE_TRAMO_ANIO)
     return df
@@ -108,8 +112,11 @@ def provincias() -> pd.DataFrame:
 
     Mismo universo que la tabla de modelado v2 de Anna (72.806 accidentes), no
     que la tabla maestra. El indice es la tasa por 100 M veh-km de la provincia
-    dividida por la media nacional del mismo anio. Nunca se ensena el conteo
-    absoluto como titular.
+    dividida por la media de la Red del Estado del mismo anio. Nunca se ensena el
+    conteo absoluto como titular.
+
+    COBERTURA_VEH_KM es la parte del trafico medido que sigue en la v2 tras las
+    exclusiones. Por debajo de UMBRAL_COBERTURA la pantalla avisa.
     """
     df = pd.read_csv(DATOS / "provincias_2016_2024.csv", sep=";", encoding="utf-8-sig")
     df["tasa"] = df.N_ACC / df.VEH_KM * 1e8
@@ -117,6 +124,7 @@ def provincias() -> pd.DataFrame:
         lambda g: g.N_ACC.sum() / g.VEH_KM.sum() * 1e8, include_groups=False)
     df["tasa_nacional"] = df.ANYO.map(nacional)
     df["indice"] = df.tasa / df.tasa_nacional * 100
+    df["poca_cobertura"] = df.COBERTURA_VEH_KM < UMBRAL_COBERTURA
     return df
 
 
@@ -150,12 +158,15 @@ def prevision_provincias() -> pd.DataFrame:
         "VEH_KM": ultimo.VEH_KM.to_numpy(),
         "N_ACC_ANTERIOR": ultimo.N_ACC.to_numpy(),
         "indice_anterior": ultimo.indice.to_numpy(),
+        # La prevision usa el trafico del ultimo anio, asi que hereda su cobertura
+        "COBERTURA_VEH_KM": ultimo.COBERTURA_VEH_KM.to_numpy(),
     })
     df["tasa"] = df.N_ACC_ESPERADO / df.VEH_KM * 1e8
     df["tasa_nacional"] = df.N_ACC_ESPERADO.sum() / df.VEH_KM.sum() * 1e8
     df["indice"] = df.tasa / df.tasa_nacional * 100
     df["cambio_acc"] = df.N_ACC_ESPERADO / df.N_ACC_ANTERIOR - 1
     df["cautela"] = df.cambio_acc.abs() > UMBRAL_CAUTELA
+    df["poca_cobertura"] = df.COBERTURA_VEH_KM < UMBRAL_COBERTURA
     return df
 
 
@@ -417,7 +428,7 @@ CUANTILES = [0.50, 0.80, 0.95]
 
 @st.cache_data(show_spinner=False)
 def referencia_2024() -> np.ndarray:
-    """Las 7.248 probabilidades validas de 2024, ordenadas. Es la misma
+    """Las 7.250 probabilidades de 2024, ordenadas. Es la misma
     distribucion que usa la API de Anna para su campo percentil_2024."""
     prob = pd.read_csv(DATOS / "predicciones_tramos_2024.csv", sep=";",
                        encoding="utf-8-sig").PROB_ACCIDENTE_TRAMO_ANIO

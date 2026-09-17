@@ -103,6 +103,9 @@ if not ranking.empty:
         ui.columna("Percentil nacional", "Percentil", "percentil"),
         ui.columna("Riesgo", "Nivel", "riesgo"),
     ], alto=560, ranking=True)
+    if ranking.N_ACC.isna().any():
+        st.caption("«—» marca los tramos sin recuento de accidentes, que quedaron fuera de la "
+                   "evaluación del modelo. Siguen en la lista porque tienen riesgo estimado.")
 
 if not ranking.empty:
     provincia_top = ranking.provincia.value_counts()

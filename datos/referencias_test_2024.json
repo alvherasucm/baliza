@@ -1,49 +1,49 @@
 {
   "conjunto": {
-    "nombre": "Test común 2024",
-    "n": 6730,
-    "objetivo": "HUBO_ACCIDENTE: al menos un accidente con víctimas en el tramo durante 2024",
-    "prevalencia": 0.45557206537890044,
-    "version_modelo": "v1 | Random Forest | Base"
+    "nombre": "Test v2 2024",
+    "n": 6732,
+    "objetivo": "HUBO_ACCIDENTE",
+    "prevalencia": 0.45573380867498514,
+    "version_modelo": "v2 | Random Forest | Base"
   },
   "referencias": [
     {
       "id": "modelo_final",
       "nombre": "Modelo final",
-      "n": 6730,
-      "definicion": "Probabilidad estimada por el Random Forest final a partir del tráfico, la longitud, el tipo de vía y la provincia.",
-      "roc_auc": 0.8335427455512922,
-      "average_precision": 0.814271433872535
+      "n": 6732,
+      "definicion": "Probabilidad estimada por el Random Forest final v2.",
+      "roc_auc": 0.8353194138821358,
+      "average_precision": 0.8178877801005694
     },
     {
       "id": "solo_trafico",
       "nombre": "Solo tráfico",
-      "n": 6730,
-      "definicion": "Ordena los tramos únicamente por su intensidad media diaria de tráfico (IMD total); no es un modelo ajustado.",
-      "roc_auc": 0.7526284460215863,
-      "average_precision": 0.7275578469067571
+      "n": 6732,
+      "definicion": "Ordena únicamente por la IMD total; en los dos tramos sin tráfico usa la misma imputación v2 del entrenamiento.",
+      "roc_auc": 0.7527247652197925,
+      "average_precision": 0.7277173716395292
     },
     {
       "id": "historico",
       "nombre": "Histórico",
-      "n": 6730,
-      "definicion": "Ordena por el número de accidentes del mismo intervalo en 2023. Los 604 tramos sin intervalo idéntico en 2023 reciben valor cero; hay correspondencia exacta para 6.126 tramos (91,03 %).",
-      "roc_auc": 0.7254691278766696,
-      "average_precision": 0.6947588519391442
+      "n": 6732,
+      "definicion": "Ordena por el número de accidentes del mismo intervalo en 2023; 605 de 6.732 tramos sin intervalo idéntico reciben valor cero.",
+      "roc_auc": 0.725247421260739,
+      "average_precision": 0.6946651900289598
     }
   ],
   "por_tipo_via": [
     {
       "tipo_via": "Autopista_autovia",
       "nombre": "Autopista o autovía",
-      "n": 2418,
+      "n": 2420,
       "modelo_final": {
-        "roc_auc": 0.825055631342436,
-        "average_precision": 0.8991470009177384
+        "roc_auc": 0.8250137172519874,
+        "average_precision": 0.9023080366108149
       },
       "solo_trafico": {
-        "roc_auc": 0.742237074393225,
-        "average_precision": 0.8502712306519288
+        "roc_auc": 0.7421318459105635,
+        "average_precision": 0.8502975505689009
       }
     },
     {
@@ -51,8 +51,8 @@
       "nombre": "Carretera convencional",
       "n": 4042,
       "modelo_final": {
-        "roc_auc": 0.7908394742080501,
-        "average_precision": 0.6575728476362168
+        "roc_auc": 0.7938386119869985,
+        "average_precision": 0.6628485188540018
       },
       "solo_trafico": {
         "roc_auc": 0.6852208464785463,
@@ -64,8 +64,8 @@
       "nombre": "Vía multicarril",
       "n": 270,
       "modelo_final": {
-        "roc_auc": 0.8083651490113398,
-        "average_precision": 0.7616820399410194
+        "roc_auc": 0.8159439284289703,
+        "average_precision": 0.7764814390474182
       },
       "solo_trafico": {
         "roc_auc": 0.5882956293805915,
@@ -73,11 +73,9 @@
       }
     }
   ],
-  "conclusion_storytelling": "El modelo supera a ordenar solo por tráfico en los tres tipos de vía. La ventaja es clara en carreteras convencionales, pero no se concentra especialmente en las convencionales de poco tráfico; debe retirarse esa precisión de la frase actual.",
   "proveniencia": {
-    "etiquetas": "Tabla_Modelado_IMD_test_vf.csv del artefacto v1 restrictivo usado en la evaluación final",
-    "predicciones": "datos/predicciones_tramos_2024.csv, limitado a EN_TEST_COMUN = true",
-    "historico": "Tabla_Modelado_IMD_Tramo_Anio_vf.csv, año 2023",
-    "criterio": "Todas las métricas se calculan sobre las mismas 6.730 observaciones"
+    "etiquetas": "Tabla_Modelado_IMD_test_v2.csv",
+    "predicciones": "predicciones_tramos_2024.csv v2",
+    "criterio": "Mismas 6.732 observaciones para todas las referencias"
   }
 }

@@ -55,10 +55,17 @@ Invoke-RestMethod -Uri http://127.0.0.1:8000/predict `
   -Method Post -ContentType "application/json" -Body $body
 ```
 
+Con los artefactos de esta entrega, el ejemplo devuelve una probabilidad anual
+de `0.9392436082451711` (`93,92 %`) y el percentil `94.32` respecto a la red de
+referencia de 2024. El nombre de versión se obtiene de `ficha_modelo.json`; los
+tests no lo fijan manualmente.
+
 `BALIZA_MODEL_PATH` puede utilizarse opcionalmente para probar otro fichero de
 modelo. No es necesaria para el funcionamiento normal.
 
 La probabilidad devuelta corresponde a que el tramo registre al menos un
 accidente durante el año, condicionada al tráfico indicado. No es la
 probabilidad de accidente de un conductor concreto. `percentil_2024` sitúa el
-resultado frente a las 7.248 predicciones válidas de la referencia de 2024.
+resultado frente a las 7.250 predicciones de la referencia v2 de 2024. Los dos
+tramos sin IMD observado se puntúan con la imputación del propio modelo y quedan
+identificados mediante `IMD_IMPUTADO` en el CSV de predicciones.

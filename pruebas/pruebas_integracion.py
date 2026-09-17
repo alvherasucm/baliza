@@ -80,8 +80,17 @@ comprobar("las referencias son del modelo que se carga",
           referencias["conjunto"]["version_modelo"] == " | ".join(
               str(paquete.get(c)) for c in ("version_datos", "familia", "configuracion")),
           referencias["conjunto"]["version_modelo"])
-comprobar("el ROC-AUC del modelo es el de metricas_finales.csv",
-          abs(filas["modelo_final"]["roc_auc"] - 0.8335427455512922) < 1e-12,
+control = json.loads((RAIZ / "cifras_control.json").read_text(encoding="utf-8"))
+acc24 = pd.read_csv(DATOS / "accidentes_tramos_2024.csv", sep=";", encoding="utf-8-sig")
+en_test = acc24.TRAMO_ID.isin(test_comun.TRAMO_ID)
+comprobar("las etiquetas de la app son las del test de la entrega",
+          len(acc24) == len(pred24) and int(en_test.sum()) == control["tramos_test"]
+          and int(acc24.N_ACCIDENTES[en_test].sum()) == control["accidentes_test"]
+          and int(acc24.HUBO_ACCIDENTE[en_test].sum()) == control["positivos_test"]
+          and acc24.N_ACCIDENTES[~en_test].isna().all(),
+          f"{control['accidentes_test']} accidentes, {control['positivos_test']} positivos")
+comprobar("el ROC-AUC del modelo es el de cifras_control.json",
+          abs(filas["modelo_final"]["roc_auc"] - control["roc_auc"]) < 1e-12,
           f"{filas['modelo_final']['roc_auc']:.4f} frente a "
           f"{filas['solo_trafico']['roc_auc']:.4f} (tráfico) y "
           f"{filas['historico']['roc_auc']:.4f} (histórico)")
@@ -223,6 +232,11 @@ miki = pd.read_csv(DATOS / "provincias_2016_2024.csv", sep=";", encoding="utf-8-
 entradas = ["N_ACC", "VEH_KM", "IMD_MEDIA", "TEMPERATURA_MEDIA_C"]
 comprobar("358 filas y entradas del modelo completas",
           len(miki) == 358 and miki[entradas].notna().all().all(), f"{len(miki)} filas")
+cobertura = miki.COBERTURA_VEH_KM
+bajas = miki[cobertura < 0.60]
+comprobar("cobertura completa, entre 0 y 1, y 20 provincias-año por debajo del 60 %",
+          cobertura.notna().all() and cobertura.between(0, 1).all() and len(bajas) == 20,
+          "en 2024: " + ", ".join(sorted(bajas[bajas.ANYO == 2024].PROV)))
 
 # Mismo universo que la tabla de modelado v2 de Anna (Tabla_Modelado_IMD_Tramo_Anio_v2),
 # no que la tabla maestra. Si una entrega nueva cambia la fuente, esto avisa.
@@ -282,6 +296,8 @@ comprobar("el jerárquico mejora a la regla ingenua en MAE y en RMSE",
 prevision = prevision_provincias()
 media = (prevision.indice * prevision.VEH_KM).sum() / prevision.VEH_KM.sum()
 comprobar("la previsión cubre las 44 provincias con dato en 2024", len(prevision) == 44)
+comprobar("la previsión hereda el aviso de cobertura de 2024 (Málaga y Barcelona)",
+          set(prevision[prevision.poca_cobertura].PROV) == {"Málaga", "Barcelona"})
 comprobar("el índice previsto se calcula sobre la tasa: su media ponderada por tráfico es 100",
           abs(media - 100) < 1e-9, f"{media:.6f}")
 comprobar("Madrid en la previsión coincide con la función",

@@ -7,10 +7,9 @@ from baliza import componentes as ui
 from baliza import datos, estilo
 
 tramos = datos.tramos_puntuados()
-maestra = datos.maestra_completa()
-m24 = maestra[maestra.ANYO == datos.ANIO]
+con_recuento = tramos.dropna(subset=["N_ACC"])
 
-orden = m24.sort_values("N_ACC", ascending=False)
+orden = con_recuento.sort_values("N_ACC", ascending=False)
 corte = max(1, int(len(orden) * 0.10))
 concentracion = orden.head(corte).N_ACC.sum() / orden.N_ACC.sum()
 
@@ -20,8 +19,8 @@ ui.cabecera_pagina(
     "Baliza puntúa cada tramo de la Red de Carreteras del Estado para que sepas dónde se "
     "acumula el riesgo antes de salir.",
     meta=[("Datos", "DGT 2016-2024"), ("Tramos puntuados", estilo.num(len(tramos))),
-          ("Red medida", f"{estilo.num(m24.LONGITUD.sum())} km"),
-          ("Cobertura", f"{m24.PROVINCIA.nunique()} provincias peninsulares")],
+          ("Red medida", f"{estilo.num(tramos.longitud_km.sum())} km"),
+          ("Cobertura", f"{tramos.provincia.nunique()} provincias peninsulares")],
 )
 
 ui.rejilla([
@@ -32,8 +31,8 @@ ui.rejilla([
     ui.tarjeta_cifra("Letalidad frente a la media", "2,2", unidad="veces",
                      pie="y 5,4 veces la de un accidente urbano"),
     ui.tarjeta_cifra("Accidentes en solo el 10 % de los tramos", estilo.pct(concentracion),
-                     pie=f"los {estilo.num(corte)} tramos con más accidentes de "
-                         f"{estilo.num(len(m24))} en {datos.ANIO}"),
+                     pie=f"los {estilo.num(corte)} tramos con más accidentes, de los "
+                         f"{estilo.num(len(con_recuento))} con recuento en {datos.ANIO}"),
 ], plantilla="repeat(4, minmax(0, 1fr))")
 
 ui.imagen_portada(estilo.PORTADA_URL,
@@ -46,7 +45,7 @@ ui.cabecera_seccion("Qué puedes hacer con Baliza",
 MODULOS = [
     ("ruta", "Cuánto riesgo acumula un trayecto y dónde se concentra."),
     ("mapa", "Ranking de tramos, con varios criterios para ordenarlos."),
-    ("mapa_provincial", "El riesgo de cada provincia en un mapa, con España = 100."),
+    ("mapa_provincial", "El riesgo de cada provincia en un mapa, con la Red del Estado = 100."),
     ("provincia", "Una provincia frente a la media del país, año a año."),
     ("noche", "Cuánto cambia la gravedad según cuándo y cómo sales."),
     ("flotas", "Puntúa las rutas habituales de una flota."),

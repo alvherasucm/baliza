@@ -90,6 +90,13 @@ Entrega de Miki, sin modificar: `baliza/predecir_provincia.py`, sus coeficientes
   como el histórico. Con el conteo, Madrid saldría arriba solo por tener más tráfico.
 - Si la previsión cambia más de un 20 % respecto al año anterior, la pantalla añade una
   nota de cautela. El texto es nuestro; el umbral es el mismo que usa la función.
+- `COBERTURA_VEH_KM`: parte del tráfico medido en la Red del Estado de cada provincia y año
+  que sigue en la v2 tras las exclusiones. Por debajo de 0,60 (`UMBRAL_COBERTURA`), Tu
+  provincia y el mapa avisan de «Poca cobertura». Son 20 de 358 provincias-año; en 2024,
+  Málaga y Barcelona. La previsión del año siguiente hereda el aviso del último año.
+- Los índices se rotulan «Red del Estado = 100», no «España = 100»: solo se mide esa red.
+- Reproducibilidad: `App/Miki/Final 2` trae el notebook final, los scripts y
+  `datos_provincia_anyo_v2.csv`, reconstruido con este CSV más la meteorología de AEMET.
 
 ## Diseño
 

@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from api.main import app
@@ -28,13 +29,16 @@ def test_health_carga_modelo():
 
 def test_predict_devuelve_probabilidad_y_percentil_reproducibles():
     with TestClient(app) as client:
+        version_cargada = client.get("/health").json()["version_modelo"]
         respuesta = client.post("/predict", json=TRAMO_VALIDO)
     assert respuesta.status_code == 200
     cuerpo = respuesta.json()
     assert 0 <= cuerpo["probabilidad_anual"] <= 1
     assert 0 <= cuerpo["percentil_2024"] <= 100
     assert cuerpo["tramo_id"] == TRAMO_VALIDO["TRAMO_ID"]
-    assert cuerpo["version_modelo"] == "v1 | Random Forest | Base"
+    assert cuerpo["version_modelo"] == version_cargada
+    assert cuerpo["probabilidad_anual"] == pytest.approx(0.9392436082451711)
+    assert cuerpo["percentil_2024"] == pytest.approx(94.32)
 
 
 def test_predict_rechaza_proporcion_invalida():

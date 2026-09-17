@@ -14,9 +14,10 @@ ultimo["puesto"] = ultimo.indice.rank(ascending=False).astype(int)
 
 ui.cabecera_pagina(
     "Tu provincia",
-    "El riesgo de tu provincia frente a España",
-    "Compara el riesgo de una provincia con la media del país y mira cómo ha evolucionado.",
-    meta=[("Año", str(int(prov.ANYO.max()))), ("Referencia", "España = 100"),
+    "El riesgo de tu provincia frente a la Red del Estado",
+    "Compara el riesgo de una provincia con la media de la Red de Carreteras del Estado y mira "
+    "cómo ha evolucionado.",
+    meta=[("Año", str(int(prov.ANYO.max()))), ("Referencia", "Red del Estado = 100"),
           ("Serie", "2016-2024 sin 2020")],
 )
 
@@ -39,15 +40,21 @@ variacion = fila.indice - anterior.iloc[-1].indice if len(anterior) else 0
 st.write("")
 ui.rejilla([
     ui.tarjeta_cifra("Índice de riesgo", f"{fila.indice:.0f}",
-                     ayuda="Media nacional = 100. Por encima de 100, más accidentes por "
-                           "kilómetro recorrido que la media del país.",
+                     ayuda="Media de la Red del Estado = 100. Por encima de 100, más "
+                           "accidentes por kilómetro recorrido que la media de la red.",
                      delta=f"{'+' if variacion >= 0 else '−'}{estilo.num(abs(variacion))} "
                            "respecto al año anterior",
                      tono="malo" if variacion > 0 else "bueno"),
-    ui.tarjeta_cifra("Puesto en España", f"{fila.puesto}.º", unidad=f"de {len(ultimo)}",
+    ui.tarjeta_cifra("Puesto", f"{fila.puesto}.º", unidad=f"de {len(ultimo)} provincias",
                      pie="de más a menos riesgo relativo"),
     ui.tarjeta_cifra("Año", f"{int(fila.ANYO)}", pie="último año con datos"),
 ])
+if fila.poca_cobertura:
+    ui.panel_info(
+        f"En {int(fila.ANYO)} solo entra en el cálculo el {estilo.pct(fila.COBERTURA_VEH_KM)} del "
+        f"tráfico medido en la Red del Estado de {elegida}. En el resto de tramos no se pudieron "
+        "situar todos los accidentes con seguridad y se dejaron fuera. Tómalo como una "
+        "orientación, no como una comparación firme.", aviso=True, etiqueta="Poca cobertura")
 mas_accidentes = ultimo.loc[ultimo.N_ACC.idxmax()]
 ui.panel_info(
     f"El índice cuenta accidentes por vehículo-kilómetro, así que separa cuánto tráfico hay de "
@@ -72,9 +79,13 @@ with izquierda:
     referencia = base.mark_line(color=estilo.TINTA_TENUE, strokeDash=[4, 4],
                                 strokeWidth=1.2).encode(y="nacional:Q")
     with ui.contenedor_grafico("evolucion"):
-        st.caption(f"{elegida} · la línea discontinua es la media nacional (100)")
+        st.caption(f"{elegida} · la línea discontinua es la media de la Red del Estado (100)")
         st.altair_chart(estilo.tema_altair((referencia + linea + puntos).properties(height=260)),
                         theme=None, use_container_width=True)
+        flojos = serie[serie.poca_cobertura]
+        if len(flojos):
+            st.caption("Años con poca cobertura (menos del 60 % del tráfico medido): "
+                       + ", ".join(str(int(a)) for a in flojos.ANYO) + ".")
 
 with derecha:
     ui.cabecera_seccion("Quién mejora y quién empeora",
@@ -84,11 +95,13 @@ with derecha:
               .loc[:, [prov.ANYO.max() - 1, prov.ANYO.max()]].dropna())
     cambio["cambio"] = cambio.iloc[:, 1] - cambio.iloc[:, 0]
     cambio = cambio.reset_index()
+    flojas = set(prov[prov.ANYO >= prov.ANYO.max() - 1].query("poca_cobertura").PROV)
+    cambio["nota"] = cambio.PROV.map(lambda p: "Poca cobertura" if p in flojas else float("nan"))
     cambio["cambio_texto"] = cambio.cambio.map(
         lambda v: f"{'+' if v >= 0 else '−'}{estilo.num(abs(v), 1)}")
     for titulo, tabla in [("Mejoran", cambio.nsmallest(5, "cambio")),
                           ("Empeoran", cambio.nlargest(5, "cambio"))]:
-        ui.tabla(tabla, [ui.columna("PROV", titulo, "fuerte"),
+        ui.tabla(tabla, [ui.columna("PROV", titulo, "fuerte", secundario="nota"),
                          ui.columna("cambio_texto", "Puntos", "derecha")])
         st.write("")
 
@@ -159,6 +172,11 @@ ui.rejilla([
         "accidentes de media por provincia."),
 ], plantilla="repeat(2, minmax(0, 1fr))")
 
+if futura.poca_cobertura:
+    ui.panel_info(
+        f"La previsión usa el tráfico de {anio_prev - 1}, y ese año solo entró el "
+        f"{estilo.pct(futura.COBERTURA_VEH_KM)} del tráfico medido en {elegida}.",
+        aviso=True, etiqueta="Poca cobertura")
 if futura.cautela:
     nota = (f"La previsión supone un {estilo.pct(abs(futura.cambio_acc))} "
             f"{'más' if futura.cambio_acc > 0 else 'menos'} de accidentes que en "

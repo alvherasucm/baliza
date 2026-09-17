@@ -1,0 +1,11 @@
+{
+  "version_modelo": "v2 | Random Forest | Base",
+  "tramos_cobertura": 7250,
+  "tramos_test": 6732,
+  "tramos_imd_imputada": 2,
+  "accidentes_test": 9661,
+  "positivos_test": 3068,
+  "prevalencia": 0.45573380867498514,
+  "roc_auc": 0.8353194138821358,
+  "average_precision": 0.8178877801005694
+}

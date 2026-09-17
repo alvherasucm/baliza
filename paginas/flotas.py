@@ -101,9 +101,9 @@ ui.tabla(vista, [
     ui.columna("Riesgo", "Nivel", "riesgo"),
     ui.columna("fuera_rango", "Fuera de rango", "suave"),
 ], ranking=True)
-st.caption("Probabilidad anual: estimación de que el tramo registre al menos un accidente durante "
-           "el año; no es el riesgo individual de un viaje. «Peor que» es el percentil del tramo "
-           "dentro de los 7.248 de 2024.")
+st.caption("La probabilidad anual estima si el tramo tendrá al menos un accidente en el año. "
+           "No mide el riesgo de un viaje concreto. «Peor que» indica en qué percentil queda el "
+           f"tramo entre los {estilo.num(len(datos.referencia_2024()))} puntuados en {datos.ANIO}.")
 
 paquete, _ = datos.modelo_tramos()
 version = " | ".join(str(paquete.get(c, "")) for c in ("version_datos", "familia", "configuracion"))
