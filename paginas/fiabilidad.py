@@ -7,6 +7,10 @@ from baliza import componentes as ui
 from baliza import datos, estilo
 
 metricas = datos.metricas_gravedad()
+provincias = datos.metricas_provincias()
+ingenua, jerarquico = provincias.loc["pred_naive"], provincias.loc["pred_jerarquico"]
+error_provincia = (f"Error medio de {estilo.num(jerarquico.mae, 1)} frente a "
+                   f"{estilo.num(ingenua.mae, 1)} (un {estilo.pct(jerarquico.mejora_mae)} menos)")
 
 ui.cabecera_pagina(
     "Fiabilidad",
@@ -17,8 +21,10 @@ ui.cabecera_pagina(
 )
 
 ui.rejilla([
-    ui.tarjeta_cifra("Provincia · error medio", "18,3", unidad="accidentes",
-                     pie="frente a 21,6 de la regla ingenua", delta="−15 %", tono="bueno"),
+    ui.tarjeta_cifra("Provincia · error medio", estilo.num(jerarquico.mae, 1),
+                     unidad="accidentes",
+                     pie=f"frente a {estilo.num(ingenua.mae, 1)} de repetir el año anterior",
+                     delta=f"−{estilo.pct(jerarquico.mejora_mae)}", tono="bueno"),
     ui.tarjeta_cifra("Tramo · ROC-AUC", "0,818",
                      pie="frente a 0,800 de ordenar solo por tráfico"),
     ui.tarjeta_cifra("Gravedad · graves detectados", estilo.pct(metricas["recall_severo"]),
@@ -34,16 +40,17 @@ ui.rejilla([
         "con su tráfico y sus accidentes. 2020 queda fuera de todo el estudio."),
     ui.tarjeta_texto(
         "Cómo se validó",
-        "Se reservó 2024. Los modelos se entrenan con 2016-2022, se ajustan con 2023 y se miden "
-        "con 2024, un año que no han visto. Todas las métricas de acierto de esta web salen de "
-        "ese año."),
+        "Se reservó 2024. Los modelos de tramo y de gravedad se entrenan con 2016-2022 y se "
+        "ajustan con 2023; el de provincias se entrena con 2016-2023. Los tres se miden con "
+        "2024, un año que no han visto, y de ahí salen todas las métricas de acierto de esta "
+        "web."),
 ], plantilla="repeat(2, minmax(0, 1fr))")
 
 ui.cabecera_seccion("Qué hace cada modelo y cuánto se equivoca")
 ui.tabla(pd.DataFrame([
     {"Modelo": "Provincia", "Pregunta": "Cuántos accidentes esperar en una provincia",
      "Referencia": "Suponer que este año será como el anterior",
-     "Resultado": "Error medio 18,3 frente a 21,6 (mejora un 15 %)"},
+     "Resultado": error_provincia},
     {"Modelo": "Tramo", "Pregunta": "Si un tramo tendrá algún accidente este año",
      "Referencia": "Ordenar por intensidad de tráfico",
      "Resultado": "ROC-AUC 0,818 frente a 0,800 del tráfico solo"},
@@ -62,6 +69,33 @@ ui.panel_info(
     "Lo que añade es el tipo de vía, la longitud y la provincia, y esa ventaja aparece sobre "
     "todo en carreteras convencionales con poco tráfico, donde el tráfico por sí solo engaña.",
     etiqueta="El punto ciego")
+
+ui.cabecera_seccion(
+    "Provincias: cuatro versiones del modelo",
+    "Las cuatro aprenden con 2016-2023 y se comparan en 2024 sobre las mismas "
+    f"{len(datos.predicciones_provincias())} provincias.")
+variantes = provincias.assign(
+    frente=[("referencia" if clave == "pred_naive" else
+             f"{'−' if v > 0 else '+'}{estilo.pct(abs(v))}")
+            for clave, v in zip(provincias.clave, provincias.mejora_mae)])
+ui.tabla(variantes, [
+    ui.columna("Versión", "Versión", "fuerte"),
+    ui.columna("Qué usa", "Qué tiene en cuenta", "suave"),
+    ui.columna("mae", "Error medio", "num", decimales=1),
+    ui.columna("rmse", "RMSE", "num", decimales=1),
+    ui.columna("frente", "Error frente a repetir el año", "derecha"),
+], ajustar=True)
+explicativo, predictivo = provincias.loc["pred_explicativo"], provincias.loc["pred_predictivo"]
+st.write("")
+ui.panel_info(
+    "El explicativo sirve para ver qué factores pesan, pero prevé peor que repetir el "
+    f"año anterior ({estilo.num(explicativo.mae, 1)} frente a {estilo.num(ingenua.mae, 1)}). "
+    "El salto grande llega al añadir los accidentes del año anterior: el error baja a "
+    f"{estilo.num(predictivo.mae, 1)}. El ajuste por provincia lo deja en "
+    f"{estilo.num(jerarquico.mae, 1)}. En el RMSE, que castiga más los fallos grandes, la "
+    f"distancia con la regla ingenua es mayor: {estilo.num(jerarquico.rmse, 1)} frente a "
+    f"{estilo.num(ingenua.rmse, 1)}.",
+    etiqueta="Qué aporta cada paso")
 
 ui.cabecera_seccion("Lo que este sistema no puede hacer")
 ui.rejilla([ui.lista_simple([

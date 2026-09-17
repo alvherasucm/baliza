@@ -188,18 +188,78 @@ comprobar("de noche o de madrugada puntua mas grave en la gran mayoria", noche >
           f"{noche:.0%} de las combinaciones")
 
 titulo("3. Provincias (Miki)")
+from predecir_provincia import predecir_provincia
+from baliza.datos import (COEFICIENTES_PROVINCIAS, metricas_provincias,
+                          prevision_provincias)
+
 miki = pd.read_csv(DATOS / "provincias_2016_2024.csv", sep=";", encoding="utf-8-sig")
-maestra = pd.read_csv(DATOS / "tabla_maestra.csv", sep=None, engine="python",
-                      encoding="utf-8-sig")
-agregado = maestra.groupby(["PROVINCIA", "ANYO"], as_index=False).agg(
-    N_ACC_M=("N_ACC", "sum"), VEH_KM_M=("VEH_KM", "sum"))
-cruce = miki.merge(agregado, left_on=["PROV", "ANYO"], right_on=["PROVINCIA", "ANYO"],
-                   how="left")
-comprobar("todas las filas existen en la maestra", cruce.N_ACC_M.notna().all())
-comprobar("N_ACC cuadra", cruce.N_ACC.eq(cruce.N_ACC_M).all(),
-          f"{int(cruce.N_ACC.eq(cruce.N_ACC_M).sum())}/{len(cruce)} filas")
-comprobar("VEH_KM cuadra",
-          ((cruce.VEH_KM - cruce.VEH_KM_M).abs() / cruce.VEH_KM_M).max() < 0.01)
+entradas = ["N_ACC", "VEH_KM", "IMD_MEDIA", "TEMPERATURA_MEDIA_C"]
+comprobar("358 filas y entradas del modelo completas",
+          len(miki) == 358 and miki[entradas].notna().all().all(), f"{len(miki)} filas")
+
+# Mismo universo que la tabla de modelado v2 de Anna (Tabla_Modelado_IMD_Tramo_Anio_v2),
+# no que la tabla maestra. Si una entrega nueva cambia la fuente, esto avisa.
+ACCIDENTES_V2 = {2016: 7588, 2017: 9207, 2018: 10639, 2019: 9242,
+                 2021: 7834, 2022: 8610, 2023: 10025, 2024: 9661}
+por_anio = {int(k): int(v) for k, v in miki.groupby("ANYO").N_ACC.sum().items()}
+comprobar("accidentes por año iguales a la tabla de modelado de Anna",
+          por_anio == ACCIDENTES_V2, f"{sum(por_anio.values()):,} en total")
+
+coef = json.loads(COEFICIENTES_PROVINCIAS.read_text(encoding="utf-8"))
+regiones = set(coef["provincia_a_region"].values()) - {coef["region_referencia"]}
+comprobar("toda región del mapeo tiene coeficiente y ninguno sobra",
+          regiones == set(coef["coeficientes"]["region"]))
+comprobar("toda provincia del CSV está en el mapeo y tiene ajuste",
+          set(miki.PROV) == set(coef["provincia_a_region"]) == set(coef["ajuste_por_provincia"]))
+
+# Las predicciones del CSV salen de la funcion con las entradas del propio CSV.
+# El lag es el ultimo anio disponible: 2021 usa 2019.
+miki = miki.sort_values(["PROV", "ANYO"])
+miki["LAG1"] = miki.groupby("PROV").N_ACC.shift(1)
+con_pred = miki[miki.pred_jerarquico.notna()]
+recalculo = [predecir_provincia(f.PROV, f.ANYO, f.VEH_KM, f.IMD_MEDIA / 1e4, f.LAG1,
+                                f.TEMPERATURA_MEDIA_C, ruta_json=COEFICIENTES_PROVINCIAS)
+             ["n_acc_esperado"] for f in con_pred.itertuples()]
+diferencia = (pd.Series(recalculo, index=con_pred.index) - con_pred.pred_jerarquico).abs()
+comprobar(f"las {len(con_pred)} predicciones del CSV se reproducen", diferencia.max() < 2,
+          f"diferencia maxima {diferencia.max():.2f}, redondeo de coeficientes")
+
+madrid = predecir_provincia("Madrid", 2025, veh_km=1.689e10, imd_10000=6.5213,
+                            lag1_n_acc=1390, temperatura_media_c=15.38,
+                            ruta_json=COEFICIENTES_PROVINCIAS)
+comprobar("Madrid 2025 da la cifra confirmada por Miki y avisa del salto",
+          abs(madrid["n_acc_esperado"] - 1745.4) < 0.1 and "+26%" in (madrid["aviso"] or ""),
+          f"{madrid['n_acc_esperado']}")
+try:
+    predecir_provincia("Gipuzkoa", 2025, 1e9, 1, 10, 14, ruta_json=COEFICIENTES_PROVINCIAS)
+    comprobar("Gipuzkoa se rechaza con un error explicado", False)
+except ValueError:
+    comprobar("Gipuzkoa se rechaza con un error explicado", True)
+
+variantes = pd.read_csv(DATOS / "predicciones_2024_4modelos.csv", sep=";",
+                        encoding="utf-8-sig")
+cruce = variantes.merge(miki[miki.ANYO == 2024], on="PROV", suffixes=("", "_serie"))
+comprobar("las 4 variantes cubren las mismas 44 provincias de 2024",
+          len(variantes) == len(cruce) == 44 and cruce.N_ACC.eq(cruce.N_ACC_serie).all())
+comprobar("la regla ingenua es el año anterior y el jerárquico coincide con la serie",
+          cruce.pred_naive.eq(cruce.LAG1).all()
+          and cruce.pred_jerarquico.eq(cruce.pred_jerarquico_serie).all())
+errores = metricas_provincias()
+print("  error en 2024 (MAE / RMSE): " + " · ".join(
+    f"{f.clave.removeprefix('pred_')} {f.mae:.2f} / {f.rmse:.2f}" for f in errores.itertuples()))
+comprobar("el jerárquico mejora a la regla ingenua en MAE y en RMSE",
+          errores.mejora_mae["pred_jerarquico"] > 0 and errores.mejora_rmse["pred_jerarquico"] > 0,
+          f"{errores.mejora_mae['pred_jerarquico']:.0%} y "
+          f"{errores.mejora_rmse['pred_jerarquico']:.0%}")
+
+prevision = prevision_provincias()
+media = (prevision.indice * prevision.VEH_KM).sum() / prevision.VEH_KM.sum()
+comprobar("la previsión cubre las 44 provincias con dato en 2024", len(prevision) == 44)
+comprobar("el índice previsto se calcula sobre la tasa: su media ponderada por tráfico es 100",
+          abs(media - 100) < 1e-9, f"{media:.6f}")
+comprobar("Madrid en la previsión coincide con la función",
+          abs(prevision.set_index("PROV").N_ACC_ESPERADO["Madrid"] - 1745.3) < 0.2,
+          f"{int(prevision.cautela.sum())} provincias con nota de cautela")
 
 titulo("RESUMEN")
 print("Sin fallos: los tres modelos conviven en el mismo entorno."

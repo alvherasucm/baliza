@@ -55,6 +55,7 @@
   },
   "AP-7": {
     "nombre": "Manilva - Málaga",
+    "provincia": "Málaga",
     "hitos": [
       {"ciudad": "Manilva", "pk": 137},
       {"ciudad": "Estepona", "pk": 157},
@@ -102,6 +103,7 @@
   },
   "A-7": {
     "nombre": "Mediterráneo: Pulpí - Adra (Almería)",
+    "provincia": "Almería",
     "hitos": [
       {"ciudad": "Pulpí", "pk": 665},
       {"ciudad": "Vera", "pk": 700},

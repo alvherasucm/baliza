@@ -25,11 +25,12 @@ baliza/estilos.css          sistema visual: variables --bz-* y clases de los com
 baliza/componentes.py       componentes de interfaz reutilizables
 baliza/PrediccionTramos.py  inferencia del modelo de tramos (Anna)
 baliza/validador_entrada.py validación de entradas de usuario (Jose)
+baliza/predecir_provincia.py previsión del modelo de provincias (Miki)
 datos/                      tablas y contratos de los tres modelos
-modelos/                    modelo_final.joblib y modelo_gravedad.cbm
+modelos/                    modelo_final.joblib, modelo_gravedad.cbm y coeficientes_provincias.json
 static/fuentes/             tipografía Inter servida por la propia app (licencia OFL)
 static/marca/               logotipo e icono en SVG
-pruebas/                    integración de los modelos y arranque de las páginas
+pruebas/                    integración de los modelos, arranque de las páginas y auditoría de corredores
 ```
 
 ## Reglas de trabajo
@@ -40,6 +41,8 @@ pruebas/                    integración de los modelos y arranque de las págin
 - **Antes de desplegar**, `python pruebas/pruebas_integracion.py` y
   `python pruebas/pruebas_paginas.py`. El primero comprueba que los tres modelos cargan y
   predicen en el mismo entorno; el segundo, que ninguna página lanza una excepción.
+  Si cambia `datos/corredores.json`, además
+  `python pruebas/auditar_corredores.py datos/predicciones_tramos_2024.csv datos/corredores.json`.
 
 ## Versiones
 
@@ -69,6 +72,22 @@ las pruebas de integración.
 `scores_test_2024.csv`, `labels_categorias.json` y `feature_importance.json`. Si llega
 `datos/caso_default_2024_carretera.json`, la pantalla lo usa como caso de referencia sin
 tocar código; mientras no exista, se usa el caso urbano trasladado a autovía.
+
+## Contrato de provincias
+
+Entrega de Miki, sin modificar: `baliza/predecir_provincia.py`, sus coeficientes en
+`modelos/coeficientes_provincias.json` (en su entrega se llama `coeficientes.json`),
+`datos/provincias_2016_2024.csv` y `datos/predicciones_2024_4modelos.csv`.
+
+- La serie usa la misma base que la tabla de modelado v2 de Anna: 72.806 accidentes. No
+  cuadra con `tabla_maestra.csv`, y no tiene por qué.
+- La previsión del año siguiente arrastra el tráfico, la IMD y la temperatura del último
+  año y usa sus accidentes reales como punto de partida. Álava y Bizkaia no tienen 2024 y
+  se quedan sin previsión.
+- El índice previsto se calcula sobre la tasa (accidentes esperados entre vehículos-km),
+  como el histórico. Con el conteo, Madrid saldría arriba solo por tener más tráfico.
+- Si la previsión cambia más de un 20 % respecto al año anterior, la pantalla añade una
+  nota de cautela. El texto es nuestro; el umbral es el mismo que usa la función.
 
 ## Diseño
 

@@ -34,8 +34,8 @@ pk = {h["ciudad"]: h["pk"] for h in hitos}
 pk0, pk1 = sorted([pk[origen], pk[destino]])
 
 ruta = tramos[tramos.carretera == via].copy()
-if via in datos.FILTRO_PROVINCIA:
-    ruta = ruta[ruta.provincia == datos.FILTRO_PROVINCIA[via]]
+if provincia := corredores[via].get("provincia"):
+    ruta = ruta[ruta.provincia == provincia]
 ruta = ruta[(ruta.pk_fin_km > pk0) & (ruta.pk_inicio_km < pk1)].sort_values("pk_inicio_km")
 
 if origen == destino or ruta.empty:

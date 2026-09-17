@@ -101,19 +101,71 @@ if serie.pred_jerarquico.notna().any():
         f"**{estilo.num(ultima_pred.pred_jerarquico)}** accidentes en {elegida} y hubo "
         f"**{estilo.num(ultima_pred.N_ACC)}**. Se equivocó un **{estilo.pct(error)}**.")
 
+metricas = datos.metricas_provincias()
+ingenua, modelo = metricas.loc["pred_naive"], metricas.loc["pred_jerarquico"]
+pred24 = datos.predicciones_provincias()
+peor = pred24.loc[(pred24.N_ACC - pred24.pred_naive).abs().idxmax()]
 ui.conclusiones([
     ("A ojo: repetir el año anterior",
-     "Suponer que cada provincia tendrá los mismos accidentes que el año pasado ya funciona "
-     "bastante bien: se equivoca en 21,6 accidentes de media."),
-    ("Con el modelo: 18,3 de error",
-     "El modelo tiene en cuenta el tráfico y agrupa las provincias por región. Con eso baja "
-     "el error medio a 18,3 accidentes."),
-    ("Cuánto mejora: un 15 %",
-     "Es una mejora modesta. En una provincia, lo que pasó el año anterior explica casi todo "
-     "lo que pasa al siguiente."),
+     f"Si das por hecho que cada provincia repetirá los accidentes del año anterior, te "
+     f"equivocas en {estilo.num(ingenua.mae, 1)} de media. Y hay fallos enormes: en "
+     f"{peor.PROV} habrías esperado {estilo.num(peor.pred_naive)} y hubo "
+     f"{estilo.num(peor.N_ACC)}."),
+    (f"Con el modelo: {estilo.num(modelo.mae, 1)} de error",
+     "El modelo tiene en cuenta el tráfico, la temperatura, los accidentes del año anterior "
+     "y la región de cada provincia. Así el error medio baja a "
+     f"{estilo.num(modelo.mae, 1)} accidentes."),
+    (f"Cuánto mejora: un {estilo.pct(modelo.mejora_mae)}",
+     "Donde más se nota es en los fallos grandes. El RMSE, la medida que más los castiga, baja "
+     f"un {estilo.pct(modelo.mejora_rmse)}."),
 ])
 
-st.write("")
-ui.en_desarrollo(
-    "Previsión de 2025 y comparación completa de las cuatro variantes del modelo, pendientes de "
-    "la entrega de provincias.")
+# Prevision del anio siguiente. El titular es el indice sobre la tasa; el conteo
+# va como detalle, nunca como cifra principal.
+prevision = datos.prevision_provincias()
+anio_prev = int(prevision.ANYO.iloc[0])
+prevision["puesto"] = prevision.indice.rank(ascending=False, method="min").astype(int)
+futura = prevision[prevision.PROV == elegida].iloc[0]
+salto = futura.indice - futura.indice_anterior
+if round(salto) == 0:
+    flecha, tono = f"= igual que en {anio_prev - 1}", "neutro"
+else:
+    flecha = (f"{'↑ sube' if salto > 0 else '↓ baja'} {estilo.num(abs(salto))} puntos "
+              f"frente a {anio_prev - 1}")
+    tono = "malo" if salto > 0 else "bueno"
+
+ui.cabecera_seccion(
+    f"Previsión para {anio_prev}",
+    f"La previsión da por hecho que el tráfico y la temperatura serán los de {anio_prev - 1}. "
+    f"Álava y Bizkaia no tienen datos de {anio_prev - 1}, así que se quedan sin previsión.",
+    eyebrow="Lo que viene")
+ui.rejilla([
+    ui.tarjeta_cifra(
+        f"Índice previsto para {anio_prev}", f"{futura.indice:.0f}",
+        ayuda="Accidentes esperados por kilómetro recorrido, comparados con el conjunto de "
+              "provincias con previsión, que vale 100.",
+        delta=flecha, tono=tono,
+        extra=ui.cifras_compactas([
+            (estilo.num(futura.N_ACC_ESPERADO), "accidentes esperados"),
+            (estilo.num(futura.N_ACC_ANTERIOR), f"accidentes en {anio_prev - 1}"),
+            (f"{futura.puesto}.º", f"de {len(prevision)} provincias"),
+        ])),
+    ui.tarjeta_texto(
+        "De dónde sale",
+        f"Con los datos de {elegida} en {anio_prev - 1}, el modelo estima los accidentes de "
+        f"{anio_prev}. Esa cifra se divide entre los kilómetros recorridos, como en el índice "
+        "de arriba, para que ninguna provincia salga peor solo por tener más tráfico. Cuando "
+        f"tocó prever {anio_prev - 1}, el modelo se equivocó en {estilo.num(modelo.mae, 1)} "
+        "accidentes de media por provincia."),
+], plantilla="repeat(2, minmax(0, 1fr))")
+
+if futura.cautela:
+    nota = (f"La previsión supone un {estilo.pct(abs(futura.cambio_acc))} "
+            f"{'más' if futura.cambio_acc > 0 else 'menos'} de accidentes que en "
+            f"{anio_prev - 1}. El modelo parte de lo que pasó el año anterior, y si ese año se "
+            "salió de lo normal, la previsión puede exagerar el cambio.")
+    if futura.N_ACC_ANTERIOR < 50:
+        partida = ("un solo accidente" if futura.N_ACC_ANTERIOR == 1
+                   else f"{estilo.num(futura.N_ACC_ANTERIOR)} accidentes")
+        nota += f" Además, partiendo de {partida}, cualquier diferencia pesa mucho en porcentaje."
+    ui.panel_info(nota, aviso=True, etiqueta="Tómalo con cautela")

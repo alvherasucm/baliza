@@ -19,10 +19,21 @@ sys.path.insert(0, str(RAIZ / "baliza"))
 
 ANIO = 2024
 
-# Carreteras con tramos discontinuos y PK solapados entre zonas: sin filtrar por
-# provincia, un corredor de Malaga se comeria tramos de Tarragona. Comprobado
-# sobre las 7.250 filas de 2024: ninguna otra de las 15 del JSON los tiene.
-FILTRO_PROVINCIA = {"AP-7": "Málaga", "A-7": "Almería"}
+# Modelo de provincias de Miki: coeficientes en JSON y la funcion en
+# baliza/predecir_provincia.py, los dos sin modificar.
+COEFICIENTES_PROVINCIAS = MODELOS / "coeficientes_provincias.json"
+# Mismo corte que el aviso de crecimiento de la funcion de Miki
+UMBRAL_CAUTELA = 0.20
+VARIANTES_PROVINCIAS = {
+    "pred_naive": ("Repetir el año anterior",
+                   "Los accidentes del año anterior, tal cual"),
+    "pred_explicativo": ("Explicativo",
+                         "Tráfico, región, año y temperatura, sin mirar el año anterior"),
+    "pred_predictivo": ("Predictivo",
+                        "Lo mismo, más los accidentes del año anterior"),
+    "pred_jerarquico": ("Jerárquico (el de esta web)",
+                        "El predictivo, con un ajuste propio para cada provincia"),
+}
 
 # Nombres descriptivos de la maestra frente a las tres categorias del modelo de Anna
 TIPO_VIA_MODELO = {
@@ -95,8 +106,10 @@ def maestra_completa() -> pd.DataFrame:
 def provincias() -> pd.DataFrame:
     """Serie provincia-anio de Miki con el indice base 100 ya calculado.
 
-    El indice es la tasa por 100 M veh-km de la provincia dividida por la media
-    nacional del mismo anio. Nunca se ensena el conteo absoluto como titular.
+    Mismo universo que la tabla de modelado v2 de Anna (72.806 accidentes), no
+    que la tabla maestra. El indice es la tasa por 100 M veh-km de la provincia
+    dividida por la media nacional del mismo anio. Nunca se ensena el conteo
+    absoluto como titular.
     """
     df = pd.read_csv(DATOS / "provincias_2016_2024.csv", sep=";", encoding="utf-8-sig")
     df["tasa"] = df.N_ACC / df.VEH_KM * 1e8
@@ -108,7 +121,71 @@ def provincias() -> pd.DataFrame:
 
 
 @st.cache_data(show_spinner=False)
+def prevision_provincias() -> pd.DataFrame:
+    """Prevision de Miki para el anio siguiente al ultimo con datos.
+
+    Supuesto de la entrega: VEH_KM, IMD y temperatura se arrastran del ultimo
+    anio y el lag son sus accidentes reales. Solo entran las provincias con dato
+    ese anio (Alava y Bizkaia se quedan fuera).
+
+    El indice se calcula sobre la tasa, igual que la serie historica: esperados
+    entre VEH_KM de la provincia, frente a esperados entre VEH_KM del conjunto.
+    Sobre el conteo, Madrid saldria arriba solo por tener mas trafico.
+    """
+    from predecir_provincia import predecir_provincia
+
+    serie = provincias()
+    ultimo = serie[serie.ANYO == serie.ANYO.max()]
+    anio = int(ultimo.ANYO.iloc[0]) + 1
+    esperados = [
+        predecir_provincia(f.PROV, anio, veh_km=f.VEH_KM, imd_10000=f.IMD_MEDIA / 1e4,
+                           lag1_n_acc=f.N_ACC, temperatura_media_c=f.TEMPERATURA_MEDIA_C,
+                           ruta_json=COEFICIENTES_PROVINCIAS)["n_acc_esperado"]
+        for f in ultimo.itertuples()
+    ]
+    df = pd.DataFrame({
+        "PROV": ultimo.PROV.to_numpy(),
+        "ANYO": anio,
+        "N_ACC_ESPERADO": esperados,
+        "VEH_KM": ultimo.VEH_KM.to_numpy(),
+        "N_ACC_ANTERIOR": ultimo.N_ACC.to_numpy(),
+        "indice_anterior": ultimo.indice.to_numpy(),
+    })
+    df["tasa"] = df.N_ACC_ESPERADO / df.VEH_KM * 1e8
+    df["tasa_nacional"] = df.N_ACC_ESPERADO.sum() / df.VEH_KM.sum() * 1e8
+    df["indice"] = df.tasa / df.tasa_nacional * 100
+    df["cambio_acc"] = df.N_ACC_ESPERADO / df.N_ACC_ANTERIOR - 1
+    df["cautela"] = df.cambio_acc.abs() > UMBRAL_CAUTELA
+    return df
+
+
+@st.cache_data(show_spinner=False)
+def predicciones_provincias() -> pd.DataFrame:
+    """Las 44 provincias de 2024 con la prediccion de cada variante de Miki."""
+    return pd.read_csv(DATOS / "predicciones_2024_4modelos.csv", sep=";", encoding="utf-8-sig")
+
+
+@st.cache_data(show_spinner=False)
+def metricas_provincias() -> pd.DataFrame:
+    """Error en 2024 de las cuatro variantes de Miki, recalculado desde sus
+    predicciones. La primera fila es la regla ingenua."""
+    pred = predicciones_provincias()
+    filas = []
+    for clave, (nombre, descripcion) in VARIANTES_PROVINCIAS.items():
+        error = pred.N_ACC - pred[clave]
+        filas.append({"clave": clave, "Versión": nombre, "Qué usa": descripcion,
+                      "mae": error.abs().mean(), "rmse": float(np.sqrt((error ** 2).mean()))})
+    df = pd.DataFrame(filas)
+    df["mejora_mae"] = 1 - df.mae / df.mae.iloc[0]
+    df["mejora_rmse"] = 1 - df.rmse / df.rmse.iloc[0]
+    return df.set_index("clave", drop=False)
+
+
+@st.cache_data(show_spinner=False)
 def corredores() -> dict:
+    """Corredores de Jose. Las vias discontinuas (AP-7, A-7) traen el campo
+    `provincia` y la ruta se recorta a ella: sin eso, un corredor de Malaga se
+    comeria tramos de Tarragona. Lo vigila pruebas/auditar_corredores.py."""
     return json.loads((DATOS / "corredores.json").read_text(encoding="utf-8"))
 
 

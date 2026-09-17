@@ -1,0 +1,312 @@
+{
+  "modelo": "GLM Binomial Negativa, log-link, offset=log(VEH_KM), con ajuste jerarquico por provincia",
+  "fuente_datos": "datos_IMD_AEMET_por_ano_y_prov_1.csv (N_ACC total = 72806)",
+  "entrenado_con": "2016-2023 (sin 2020), excluyendo filas sin LAG1_N_ACC o con LAG1_N_ACC = 0",
+  "alpha_dispersion": 0.1,
+  "k_shrinkage": 1.0838,
+  "region_referencia": "Andalucia",
+  "unidades": {
+    "veh_km": "vehiculos-kilometro recorridos en el ano (exposicion; entra como offset)",
+    "imd_10000": "IMD media del ano dividida entre 10000",
+    "anyo_num": "ANYO - 2016",
+    "lag1_n_acc": "N_ACC real del ano disponible anterior en la misma provincia, escala cruda",
+    "temperatura_media_c": "temperatura media anual en grados Celsius (sustituye a la precipitacion, que dejo de ser significativa con esta fuente)"
+  },
+  "coeficientes": {
+    "intercept": -15.422399,
+    "imd_10000": -0.008348,
+    "anyo_num": -0.001042,
+    "lag1_n_acc": 0.001281,
+    "temperatura_media_c": -0.063118,
+    "region": {
+      "Castilla_y_Leon": -0.505877,
+      "Costa_mediterranea": -0.141457,
+      "Ebro_Nordeste_interior": -0.158997,
+      "Extremadura": -0.442865,
+      "Madrid": -1.38299,
+      "Meseta_centro": -0.467151,
+      "Noroeste": -0.209697,
+      "Norte_vasco_navarro": -0.284254
+    }
+  },
+  "provincia_a_region": {
+    "A Coruña": "Noroeste",
+    "Albacete": "Meseta_centro",
+    "Alicante": "Costa_mediterranea",
+    "Almería": "Andalucia",
+    "Asturias": "Noroeste",
+    "Badajoz": "Extremadura",
+    "Barcelona": "Costa_mediterranea",
+    "Bizkaia": "Norte_vasco_navarro",
+    "Burgos": "Castilla_y_Leon",
+    "Cantabria": "Noroeste",
+    "Castellón": "Costa_mediterranea",
+    "Ciudad Real": "Meseta_centro",
+    "Cuenca": "Meseta_centro",
+    "Cáceres": "Extremadura",
+    "Cádiz": "Andalucia",
+    "Córdoba": "Andalucia",
+    "Girona": "Costa_mediterranea",
+    "Granada": "Andalucia",
+    "Guadalajara": "Meseta_centro",
+    "Huelva": "Andalucia",
+    "Huesca": "Ebro_Nordeste_interior",
+    "Jaén": "Andalucia",
+    "La Rioja": "Norte_vasco_navarro",
+    "León": "Castilla_y_Leon",
+    "Lleida": "Ebro_Nordeste_interior",
+    "Lugo": "Noroeste",
+    "Madrid": "Madrid",
+    "Murcia": "Costa_mediterranea",
+    "Málaga": "Andalucia",
+    "Navarra": "Norte_vasco_navarro",
+    "Ourense": "Noroeste",
+    "Palencia": "Castilla_y_Leon",
+    "Pontevedra": "Noroeste",
+    "Salamanca": "Castilla_y_Leon",
+    "Segovia": "Castilla_y_Leon",
+    "Sevilla": "Andalucia",
+    "Soria": "Castilla_y_Leon",
+    "Tarragona": "Costa_mediterranea",
+    "Teruel": "Ebro_Nordeste_interior",
+    "Toledo": "Meseta_centro",
+    "Valencia": "Costa_mediterranea",
+    "Valladolid": "Castilla_y_Leon",
+    "Zamora": "Castilla_y_Leon",
+    "Zaragoza": "Ebro_Nordeste_interior",
+    "Álava": "Norte_vasco_navarro",
+    "Ávila": "Castilla_y_Leon"
+  },
+  "ajuste_por_provincia": {
+    "A Coruña": {
+      "desviacion_encogida": -0.010685,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Albacete": {
+      "desviacion_encogida": -0.128556,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Alicante": {
+      "desviacion_encogida": -0.005405,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Almería": {
+      "desviacion_encogida": -0.461709,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Asturias": {
+      "desviacion_encogida": -0.129537,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Badajoz": {
+      "desviacion_encogida": 0.027198,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Barcelona": {
+      "desviacion_encogida": 0.031208,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Bizkaia": {
+      "desviacion_encogida": 0.220133,
+      "n_anyos_historico": 2,
+      "peso": 0.6486
+    },
+    "Burgos": {
+      "desviacion_encogida": -0.294955,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Cantabria": {
+      "desviacion_encogida": 0.061435,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Castellón": {
+      "desviacion_encogida": 0.025499,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Ciudad Real": {
+      "desviacion_encogida": 0.019871,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Cuenca": {
+      "desviacion_encogida": -0.230294,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Cáceres": {
+      "desviacion_encogida": -0.045924,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Cádiz": {
+      "desviacion_encogida": 0.071866,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Córdoba": {
+      "desviacion_encogida": -0.061914,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Girona": {
+      "desviacion_encogida": 0.079857,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Granada": {
+      "desviacion_encogida": 0.058297,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Guadalajara": {
+      "desviacion_encogida": 0.02856,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Huelva": {
+      "desviacion_encogida": 0.036696,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Huesca": {
+      "desviacion_encogida": -0.095993,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Jaén": {
+      "desviacion_encogida": -0.148649,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "La Rioja": {
+      "desviacion_encogida": 0.155117,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "León": {
+      "desviacion_encogida": 0.050072,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Lleida": {
+      "desviacion_encogida": 0.247543,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Lugo": {
+      "desviacion_encogida": -0.185461,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Madrid": {
+      "desviacion_encogida": -0.025898,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Murcia": {
+      "desviacion_encogida": -0.38262,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Málaga": {
+      "desviacion_encogida": -0.304762,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Navarra": {
+      "desviacion_encogida": -1.494971,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Ourense": {
+      "desviacion_encogida": -0.26726,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Palencia": {
+      "desviacion_encogida": -0.301663,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Pontevedra": {
+      "desviacion_encogida": 0.319422,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Salamanca": {
+      "desviacion_encogida": 0.148852,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Segovia": {
+      "desviacion_encogida": 0.082211,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Sevilla": {
+      "desviacion_encogida": 0.053245,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Soria": {
+      "desviacion_encogida": -0.173201,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Tarragona": {
+      "desviacion_encogida": 0.223711,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Teruel": {
+      "desviacion_encogida": -0.159675,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Toledo": {
+      "desviacion_encogida": 0.168935,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Valencia": {
+      "desviacion_encogida": -0.297808,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Valladolid": {
+      "desviacion_encogida": 0.091558,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Zamora": {
+      "desviacion_encogida": -0.140593,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Zaragoza": {
+      "desviacion_encogida": -0.110323,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    },
+    "Álava": {
+      "desviacion_encogida": 0.195284,
+      "n_anyos_historico": 2,
+      "peso": 0.6486
+    },
+    "Ávila": {
+      "desviacion_encogida": 0.254205,
+      "n_anyos_historico": 6,
+      "peso": 0.847
+    }
+  }
+}

@@ -71,8 +71,10 @@ with st.expander("Detalle técnico"):
         f"({estilo.num(ficha['n_test_comun'])} observaciones). ROC-AUC 0,834 en test.")
     st.markdown(
         "**Modelo de provincias.** Regresión binomial negativa con offset logarítmico de "
-        "vehículos-kilómetro y efectos jerárquicos por región con encogimiento. La "
-        "sobredispersión provincial es de 15,2; por eso no sirve una Poisson."
+        "vehículos-kilómetro y efectos jerárquicos por región con encogimiento. Predictores: "
+        "IMD media, año, accidentes del año anterior y temperatura media anual. Se entrena con "
+        "2016-2023 sin 2020 y se mide con 2024. La sobredispersión provincial es de 18,2; por "
+        "eso no sirve una Poisson."
     )
     st.markdown(
         "**Modelo de gravedad.** CatBoost binario, leve frente a grave o mortal, sobre el "
