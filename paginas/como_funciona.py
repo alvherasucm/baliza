@@ -68,7 +68,8 @@ with st.expander("Detalle técnico"):
         f"**Modelo de tramos.** {ficha['familia']}, unidad {ficha['unidad']}, objetivo "
         f"`{ficha['objetivo']}`. Predictores: {', '.join(ficha['predictores'])}. "
         f"Partición temporal: entrenamiento 2016-2022 sin 2020, validación 2023, test 2024 "
-        f"({estilo.num(ficha['n_test_comun'])} observaciones). ROC-AUC 0,834 en test.")
+        f"({estilo.num(ficha['n_test_comun'])} observaciones). ROC-AUC "
+        f"{estilo.num(datos.referencias_tramos()['modelo_final']['roc_auc'], 3)} en test.")
     st.markdown(
         "**Modelo de provincias.** Regresión binomial negativa con offset logarítmico de "
         "vehículos-kilómetro y efectos jerárquicos por región con encogimiento. Predictores: "

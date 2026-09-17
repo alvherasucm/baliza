@@ -21,10 +21,10 @@
   --bz-primary-soft: #1B2933;
   --bz-hover: #1C2731;
 
-  /* Riesgo: de gris calido a rojo; sobre oscuro resalta lo mas saturado */
-  --bz-risk-low: #9C8B7E;
-  --bz-risk-low-text: #C2B3A7;
-  --bz-risk-low-soft: #2A2724;
+  /* Riesgo: de verde apagado a rojo; sobre oscuro resalta lo mas saturado */
+  --bz-risk-low: #58A58C;
+  --bz-risk-low-text: #93CDB9;
+  --bz-risk-low-soft: #1D2F2B;
   --bz-risk-medium: #D9A55B;
   --bz-risk-medium-soft: #2E2615;
   --bz-risk-high: #E8743F;

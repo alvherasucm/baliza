@@ -1,0 +1,83 @@
+{
+  "conjunto": {
+    "nombre": "Test común 2024",
+    "n": 6730,
+    "objetivo": "HUBO_ACCIDENTE: al menos un accidente con víctimas en el tramo durante 2024",
+    "prevalencia": 0.45557206537890044,
+    "version_modelo": "v1 | Random Forest | Base"
+  },
+  "referencias": [
+    {
+      "id": "modelo_final",
+      "nombre": "Modelo final",
+      "n": 6730,
+      "definicion": "Probabilidad estimada por el Random Forest final a partir del tráfico, la longitud, el tipo de vía y la provincia.",
+      "roc_auc": 0.8335427455512922,
+      "average_precision": 0.814271433872535
+    },
+    {
+      "id": "solo_trafico",
+      "nombre": "Solo tráfico",
+      "n": 6730,
+      "definicion": "Ordena los tramos únicamente por su intensidad media diaria de tráfico (IMD total); no es un modelo ajustado.",
+      "roc_auc": 0.7526284460215863,
+      "average_precision": 0.7275578469067571
+    },
+    {
+      "id": "historico",
+      "nombre": "Histórico",
+      "n": 6730,
+      "definicion": "Ordena por el número de accidentes del mismo intervalo en 2023. Los 604 tramos sin intervalo idéntico en 2023 reciben valor cero; hay correspondencia exacta para 6.126 tramos (91,03 %).",
+      "roc_auc": 0.7254691278766696,
+      "average_precision": 0.6947588519391442
+    }
+  ],
+  "por_tipo_via": [
+    {
+      "tipo_via": "Autopista_autovia",
+      "nombre": "Autopista o autovía",
+      "n": 2418,
+      "modelo_final": {
+        "roc_auc": 0.825055631342436,
+        "average_precision": 0.8991470009177384
+      },
+      "solo_trafico": {
+        "roc_auc": 0.742237074393225,
+        "average_precision": 0.8502712306519288
+      }
+    },
+    {
+      "tipo_via": "Convencional",
+      "nombre": "Carretera convencional",
+      "n": 4042,
+      "modelo_final": {
+        "roc_auc": 0.7908394742080501,
+        "average_precision": 0.6575728476362168
+      },
+      "solo_trafico": {
+        "roc_auc": 0.6852208464785463,
+        "average_precision": 0.509235893265014
+      }
+    },
+    {
+      "tipo_via": "Multicarril",
+      "nombre": "Vía multicarril",
+      "n": 270,
+      "modelo_final": {
+        "roc_auc": 0.8083651490113398,
+        "average_precision": 0.7616820399410194
+      },
+      "solo_trafico": {
+        "roc_auc": 0.5882956293805915,
+        "average_precision": 0.4843195867013104
+      }
+    }
+  ],
+  "conclusion_storytelling": "El modelo supera a ordenar solo por tráfico en los tres tipos de vía. La ventaja es clara en carreteras convencionales, pero no se concentra especialmente en las convencionales de poco tráfico; debe retirarse esa precisión de la frase actual.",
+  "proveniencia": {
+    "etiquetas": "Tabla_Modelado_IMD_test_vf.csv del artefacto v1 restrictivo usado en la evaluación final",
+    "predicciones": "datos/predicciones_tramos_2024.csv, limitado a EN_TEST_COMUN = true",
+    "historico": "Tabla_Modelado_IMD_Tramo_Anio_vf.csv, año 2023",
+    "criterio": "Todas las métricas se calculan sobre las mismas 6.730 observaciones"
+  }
+}

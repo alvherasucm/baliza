@@ -31,6 +31,7 @@ modelos/                    modelo_final.joblib, modelo_gravedad.cbm y coeficien
 static/fuentes/             tipografía Inter servida por la propia app (licencia OFL)
 static/marca/               logotipo e icono en SVG
 pruebas/                    integración de los modelos, arranque de las páginas y auditoría de corredores
+api/                        servicio FastAPI del modelo de tramos (Anna), fuera de la app
 ```
 
 ## Reglas de trabajo
@@ -43,6 +44,7 @@ pruebas/                    integración de los modelos, arranque de las página
   predicen en el mismo entorno; el segundo, que ninguna página lanza una excepción.
   Si cambia `datos/corredores.json`, además
   `python pruebas/auditar_corredores.py datos/predicciones_tramos_2024.csv datos/corredores.json`.
+  Si cambia algo de `api/` o del modelo de tramos, además `python -m pytest api/test_api.py -q`.
 
 ## Versiones
 
@@ -55,8 +57,8 @@ las pruebas de integración.
 - **Nada de conteos absolutos como titular.** Tasa por 100 millones de vehículos-kilómetro,
   índice con media nacional igual a 100, o categorías de riesgo. Un número absoluto es
   indefendible porque el universo es parcial.
-- **El color nunca va solo.** Los niveles de riesgo usan una sola gama, de terracota a
-  granate, y llevan siempre la etiqueta de texto.
+- **El color nunca va solo.** Los niveles de riesgo van de verde apagado a rojo y llevan
+  siempre la etiqueta de texto.
 - **Cada pantalla que da un número** lleva al lado qué haría cualquiera a ojo, qué dice el
   modelo y cuánto se equivoca cada uno.
 - **El score de gravedad no está calibrado**: se enseña como puesto frente a los 101.996
@@ -108,8 +110,9 @@ Las páginas no escriben colores, CSS ni HTML: componen con los componentes.
 - Valores de diseño en un solo sitio: variables `--bz-*` de `estilos.css` (colores,
   espaciado 4/8/12/16/24/32/48/64, radios, sombras y tipografía) y `.streamlit/config.toml`.
 - Fondo en capas (`#F3F2EE` → `#F8F7F4` → blanco), acento azul petróleo `#0F3D4C`.
-- Niveles de riesgo: `#D9A88C` → `#C27A5C` → `#9D4A34` → `#6B2118`, validados como escala
-  ordinal. Índices con media 100: petróleo por debajo, terracota por encima.
+- Niveles de riesgo (tema oscuro): `#58A58C` → `#D9A55B` → `#E8743F` → `#F2483F`. El verde
+  de «Bajo» tira a azul para separarse de Medio y Alto también con daltonismo.
+  Índices con media 100: petróleo por debajo, terracota por encima.
 - Menú superior nativo (`st.navigation(position="top")`). El mapa provincial es 2D: con
   altura, unas provincias taparían a otras y la altura repetiría lo que ya dice el color.
 - CSS con clases propias; los únicos ganchos de Streamlit son la cabecera, el contenedor
@@ -117,7 +120,32 @@ Las páginas no escriben colores, CSS ni HTML: componen con los componentes.
 
 ## Tramos (Anna)
 
+Las cifras de acierto del modelo de tramos salen de `datos/referencias_test_2024.json`
+(entrega de Anna, sin modificar): ROC-AUC del modelo, de ordenar solo por tráfico y de
+ordenar por los accidentes del año anterior, sobre los 6.730 tramos del test común de 2024,
+y el desglose por tipo de vía. Fiabilidad y Cómo funciona las leen de ahí; ninguna se
+escribe a mano. `pruebas_integracion.py` comprueba que el JSON cuadra con la ficha y con el
+modelo que se carga.
+
 Las páginas «Tu ruta», «Riesgo por tramo», «Mapa provincial» y «Flotas» siguen las
 decisiones de `README_CAMBIOS.md` de Anna: tipos de vía con las tres categorías del modelo,
 probabilidad anual en porcentaje, filtros del ranking, mapa lineal y coroplético
 provincial. Cualquier cambio de lógica en estas páginas se consulta con ella antes.
+
+## API
+
+`api/` es un servicio FastAPI con el mismo modelo de tramos. La app no depende de él: es la
+demostración de que el modelo se puede consumir desde fuera. Usa la única copia de los
+ficheros del repositorio (`modelos/modelo_final.joblib`, `datos/ficha_modelo.json`,
+`datos/predicciones_tramos_2024.csv` y `baliza/PrediccionTramos.py`) y no necesita
+variables de entorno. Detalle y ejemplo en `api/README.md`.
+
+Desde la raíz, con el entorno activado:
+
+```bash
+pip install -r api/requirements.txt
+python -m uvicorn api.main:app --reload     # documentación en http://127.0.0.1:8000/docs
+python -m pytest api/test_api.py -q
+```
+
+Streamlit Cloud solo instala `requirements.txt`, así que la API no cambia el despliegue.

@@ -63,6 +63,33 @@ diferencia = (recalculo.PROB_ACCIDENTE_TRAMO_ANIO.values
 comprobar("200 tramos reales reproducen el CSV entregado", abs(diferencia).max() < 1e-9,
           f"diferencia maxima {abs(diferencia).max():.2e}")
 
+# Fiabilidad lee estas cifras del JSON de Anna. Si una entrega nueva cambia la
+# particion o el modelo, esto avisa antes de que la pagina diga otra cosa.
+ficha = json.loads((DATOS / "ficha_modelo.json").read_text(encoding="utf-8"))
+referencias = json.loads((DATOS / "referencias_test_2024.json").read_text(encoding="utf-8"))
+filas = {fila["id"]: fila for fila in referencias["referencias"]}
+test_comun = pred24[pred24.EN_TEST_COMUN.astype(str).str.lower().eq("true")]
+comprobar("las referencias se miden sobre el test común de la ficha",
+          referencias["conjunto"]["n"] == ficha["n_test_comun"] == len(test_comun)
+          and all(fila["n"] == len(test_comun) for fila in filas.values()),
+          f"{len(test_comun)} tramos")
+comprobar("el desglose por tipo de vía reparte esos mismos tramos",
+          {f["tipo_via"]: f["n"] for f in referencias["por_tipo_via"]}
+          == test_comun.tipo_via.value_counts().to_dict())
+comprobar("las referencias son del modelo que se carga",
+          referencias["conjunto"]["version_modelo"] == " | ".join(
+              str(paquete.get(c)) for c in ("version_datos", "familia", "configuracion")),
+          referencias["conjunto"]["version_modelo"])
+comprobar("el ROC-AUC del modelo es el de metricas_finales.csv",
+          abs(filas["modelo_final"]["roc_auc"] - 0.8335427455512922) < 1e-12,
+          f"{filas['modelo_final']['roc_auc']:.4f} frente a "
+          f"{filas['solo_trafico']['roc_auc']:.4f} (tráfico) y "
+          f"{filas['historico']['roc_auc']:.4f} (histórico)")
+comprobar("el modelo supera a ordenar por tráfico en los tres tipos de vía",
+          all(f["modelo_final"]["roc_auc"] > f["solo_trafico"]["roc_auc"]
+              for f in referencias["por_tipo_via"]),
+          "lo afirma la página de Fiabilidad")
+
 ejemplo = pd.DataFrame([{"provincia": "Madrid", "carretera": "A-4", "pk_inicio": 4,
                          "pk_fin": 10, "imd_total": 65000, "imd_pesados": 6500,
                          "tipo_via": "Autopista_autovia"}])

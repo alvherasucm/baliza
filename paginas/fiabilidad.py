@@ -12,6 +12,20 @@ ingenua, jerarquico = provincias.loc["pred_naive"], provincias.loc["pred_jerarqu
 error_provincia = (f"Error medio de {estilo.num(jerarquico.mae, 1)} frente a "
                    f"{estilo.num(ingenua.mae, 1)} (un {estilo.pct(jerarquico.mejora_mae)} menos)")
 
+referencias = datos.referencias_tramos()
+por_tipo = referencias["por_tipo_via"]
+auc_modelo, auc_trafico, auc_historico = (
+    referencias[clave]["roc_auc"] for clave in ("modelo_final", "solo_trafico", "historico"))
+
+
+def auc(valor) -> str:
+    return estilo.num(valor, 3)
+
+
+def ventaja(valor) -> str:
+    return f"{'+' if valor >= 0 else '−'}{auc(abs(valor))}"
+
+
 ui.cabecera_pagina(
     "Fiabilidad",
     "Qué sabemos y qué no",
@@ -25,8 +39,9 @@ ui.rejilla([
                      unidad="accidentes",
                      pie=f"frente a {estilo.num(ingenua.mae, 1)} de repetir el año anterior",
                      delta=f"−{estilo.pct(jerarquico.mejora_mae)}", tono="bueno"),
-    ui.tarjeta_cifra("Tramo · ROC-AUC", "0,818",
-                     pie="frente a 0,800 de ordenar solo por tráfico"),
+    ui.tarjeta_cifra("Tramo · ROC-AUC", auc(auc_modelo),
+                     pie=f"frente a {auc(auc_trafico)} de ordenar solo por tráfico",
+                     delta=ventaja(auc_modelo - auc_trafico), tono="bueno"),
     ui.tarjeta_cifra("Gravedad · graves detectados", estilo.pct(metricas["recall_severo"]),
                      pie=f"{estilo.pct(metricas['precision_severo'])} de los avisos aciertan"),
 ])
@@ -52,8 +67,9 @@ ui.tabla(pd.DataFrame([
      "Referencia": "Suponer que este año será como el anterior",
      "Resultado": error_provincia},
     {"Modelo": "Tramo", "Pregunta": "Si un tramo tendrá algún accidente este año",
-     "Referencia": "Ordenar por intensidad de tráfico",
-     "Resultado": "ROC-AUC 0,818 frente a 0,800 del tráfico solo"},
+     "Referencia": "Ordenar por tráfico o por los accidentes del año anterior",
+     "Resultado": f"ROC-AUC {auc(auc_modelo)} frente a {auc(auc_trafico)} del tráfico "
+                  f"y {auc(auc_historico)} del año anterior"},
     {"Modelo": "Gravedad", "Pregunta": "Si un accidente será grave o mortal",
      "Referencia": "Avisar siempre o no avisar nunca",
      "Resultado": f"Detecta el {estilo.pct(metricas['recall_severo'])} de los graves; "
@@ -63,12 +79,36 @@ ui.tabla(pd.DataFrame([
      ui.columna("Referencia", "Contra qué se compara", "suave"),
      ui.columna("Resultado", "Resultado")], ajustar=True)
 
+ui.cabecera_seccion(
+    "Tramos: el modelo frente a ordenar por tráfico",
+    f"ROC-AUC sobre los mismos {estilo.num(referencias['n'])} tramos de 2024. Un 1 sería "
+    "ordenarlos sin fallo y un 0,5, hacerlo al azar.")
+tabla_tipos = pd.concat([
+    pd.DataFrame([{"tipo_via": "Todos", "n": referencias["n"], "modelo": auc_modelo,
+                   "trafico": auc_trafico, "ventaja": auc_modelo - auc_trafico}]),
+    por_tipo,
+], ignore_index=True)
+tabla_tipos["nombre"] = tabla_tipos.tipo_via.map(
+    {"Todos": "Todos los tramos", **datos.TIPO_VIA_PRESENTACION})
+tabla_tipos["detalle"] = [
+    f"{estilo.num(n)} tramos" + (" · muestra pequeña" if n < 500 else "")
+    for n in tabla_tipos.n]
+tabla_tipos["diferencia"] = tabla_tipos.ventaja.map(ventaja)
+ui.tabla(tabla_tipos, [
+    ui.columna("nombre", "Tipo de vía", "fuerte", secundario="detalle"),
+    ui.columna("modelo", "Modelo", "num", decimales=3),
+    ui.columna("trafico", "Solo tráfico", "num", decimales=3),
+    ui.columna("diferencia", "Ventaja del modelo", "derecha"),
+], ajustar=True)
+convencional = por_tipo.set_index("tipo_via").loc["Convencional"]
 st.write("")
 ui.panel_info(
-    "El modelo de tramos supera por poco a ordenar solo por tráfico: 0,818 frente a 0,800. "
-    "Lo que añade es el tipo de vía, la longitud y la provincia, y esa ventaja aparece sobre "
-    "todo en carreteras convencionales con poco tráfico, donde el tráfico por sí solo engaña.",
-    etiqueta="El punto ciego")
+    f"Ordenar los tramos solo por tráfico ya acierta bastante: {auc(auc_trafico)}. El modelo "
+    f"llega a {auc(auc_modelo)} porque añade el tipo de vía, la longitud del tramo, el peso "
+    "de los camiones y la provincia. Gana en los tres tipos de vía, y la diferencia es clara "
+    f"en las carreteras convencionales, que son {round(convencional.n / referencias['n'] * 10)} "
+    f"de cada 10 tramos: {auc(convencional.modelo)} frente a {auc(convencional.trafico)}.",
+    etiqueta="Dónde gana el modelo")
 
 ui.cabecera_seccion(
     "Provincias: cuatro versiones del modelo",
@@ -102,7 +142,8 @@ ui.rejilla([ui.lista_simple([
     "No cubre calles de ciudad, carreteras autonómicas ni provinciales. Solo la Red de "
     "Carreteras del Estado, que es el 11 % de los accidentes y el 24 % de los "
     "fallecidos.",
-    "No cubre Baleares, Canarias ni las carreteras forales del País Vasco.",
+    "No cubre Baleares, Canarias ni las carreteras forales de Navarra y el País Vasco. "
+    "De Navarra solo entra la AP-68, que es del Estado.",
     "No predice que vayas a tener un accidente. Estima cuánto riesgo acumula un tramo al cabo "
     "de un año, y qué gravedad tendría un accidente si ocurriera.",
     "Solo cuenta accidentes con víctimas. Los de daños materiales no están en los datos.",

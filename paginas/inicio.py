@@ -70,4 +70,5 @@ with st.expander("Qué cubre Baliza"):
         "Baliza cubre la Red de Carreteras del Estado, que es interurbana: no incluye calles "
         "ni carreteras autonómicas. Es solo una parte de la red, pero en ella muere uno de cada "
         "cuatro fallecidos del país. Tampoco entran Baleares, Canarias ni las carreteras forales "
-        "del País Vasco, porque el Estado no mide su tráfico.")
+        "de Navarra y el País Vasco, porque el Estado no mide su tráfico. De Navarra solo entra "
+        "la AP-68, que sí es del Estado.")

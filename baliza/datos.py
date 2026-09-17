@@ -205,6 +205,24 @@ def metricas_gravedad() -> dict:
 
 
 @st.cache_data(show_spinner=False)
+def referencias_tramos() -> dict:
+    """Acierto del modelo de tramos frente a dos reglas sencillas (solo trafico e
+    historico) sobre el test comun de 2024, en total y por tipo de via. Entrega de
+    Anna, sin modificar: las paginas leen las cifras de aqui, nunca a mano."""
+    ref = json.loads((DATOS / "referencias_test_2024.json").read_text(encoding="utf-8"))
+    por_tipo = pd.DataFrame([
+        {"tipo_via": fila["tipo_via"], "n": fila["n"],
+         "modelo": fila["modelo_final"]["roc_auc"],
+         "trafico": fila["solo_trafico"]["roc_auc"]}
+        for fila in ref["por_tipo_via"]])
+    por_tipo["ventaja"] = por_tipo.modelo - por_tipo.trafico
+    return {"n": ref["conjunto"]["n"],
+            "version_modelo": ref["conjunto"]["version_modelo"],
+            **{fila["id"]: fila for fila in ref["referencias"]},
+            "por_tipo_via": por_tipo}
+
+
+@st.cache_data(show_spinner=False)
 def geometria_provincias() -> dict:
     """Limites provinciales para el coropletico, incluidos en el repositorio
     para que la presentacion no dependa de una conexion a Internet."""

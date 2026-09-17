@@ -31,9 +31,11 @@ PRIMARIO = "#7DB3C8"
 PRIMARIO_2 = "#3A7890"
 
 # Sobre fondo oscuro, lo que mas resalta es el color mas saturado, no el mas
-# oscuro. De gris calido a rojo, para que «Muy alto» sea lo primero que se ve.
+# oscuro. De verde apagado a rojo, para que «Muy alto» sea lo primero que se ve.
+# El verde tira a azul a proposito: con daltonismo se separa de Medio y Alto
+# mejor que el gris anterior. Siempre va con su etiqueta de texto.
 COLOR_BANDA = {
-    "Bajo": "#9C8B7E",
+    "Bajo": "#58A58C",
     "Medio": "#D9A55B",
     "Alto": "#E8743F",
     "Muy alto": "#F2483F",
