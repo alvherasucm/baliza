@@ -6,7 +6,10 @@ import streamlit as st
 from baliza import componentes as ui
 from baliza import datos, estilo
 
+# Gravedad, opcion C: el test entero es la cifra oficial y el subconjunto
+# interurbano peninsular va aparte, porque es la red sobre la que trabaja Baliza.
 metricas = datos.metricas_gravedad()
+carretera = datos.metricas_gravedad(datos.UNIVERSO_GRAVEDAD)
 provincias = datos.metricas_provincias()
 ingenua, jerarquico = provincias.loc["pred_naive"], provincias.loc["pred_jerarquico"]
 error_provincia = (f"Error medio de {estilo.num(jerarquico.mae, 1)} frente a "
@@ -42,8 +45,8 @@ ui.rejilla([
     ui.tarjeta_cifra("Tramo · ROC-AUC", auc(auc_modelo),
                      pie=f"frente a {auc(auc_trafico)} de ordenar solo por tráfico",
                      delta=ventaja(auc_modelo - auc_trafico), tono="bueno"),
-    ui.tarjeta_cifra("Gravedad · graves detectados", estilo.pct(metricas["recall_severo"]),
-                     pie=f"{estilo.pct(metricas['precision_severo'])} de los avisos aciertan"),
+    ui.tarjeta_cifra("Gravedad · graves detectados", estilo.pct(metricas["recall"]),
+                     pie=f"{estilo.pct(metricas['precision'])} de los avisos aciertan"),
 ])
 
 ui.cabecera_seccion("Cómo se construyó")
@@ -72,12 +75,44 @@ ui.tabla(pd.DataFrame([
                   f"y {auc(auc_historico)} del año anterior"},
     {"Modelo": "Gravedad", "Pregunta": "Si un accidente será grave o mortal",
      "Referencia": "Avisar siempre o no avisar nunca",
-     "Resultado": f"Detecta el {estilo.pct(metricas['recall_severo'])} de los graves; "
-                  f"{estilo.pct(metricas['precision_severo'])} de los avisos aciertan"},
+     "Resultado": f"Detecta el {estilo.pct(metricas['recall'])} de los graves; "
+                  f"{estilo.pct(metricas['precision'])} de los avisos aciertan"},
 ]), [ui.columna("Modelo", "Modelo", "fuerte"),
      ui.columna("Pregunta", "Qué responde"),
      ui.columna("Referencia", "Contra qué se compara", "suave"),
      ui.columna("Resultado", "Resultado")], ajustar=True)
+
+ui.cabecera_seccion(
+    "Gravedad: el test completo y la carretera",
+    f"La cifra oficial del modelo sale de los {estilo.num(metricas['n'])} accidentes con "
+    f"víctimas de 2024, ciudad e islas incluidas. La pantalla de gravedad se mide solo con los "
+    f"{estilo.num(carretera['n'])} que ocurrieron en carretera peninsular, que es donde "
+    f"transcurre un viaje de los que planifica esta web.")
+ui.tabla(pd.DataFrame([
+    {"conjunto": "Test 2024 completo",
+     "detalle": f"{estilo.num(metricas['n'])} accidentes · "
+                f"{estilo.pct(metricas['tasa_base'], 1)} graves o mortales",
+     "recall": metricas["recall"], "precision": metricas["precision"],
+     "auc": metricas["roc_auc"]},
+    {"conjunto": "Carretera interurbana peninsular",
+     "detalle": f"{estilo.num(carretera['n'])} accidentes · "
+                f"{estilo.pct(carretera['tasa_base'], 1)} graves o mortales",
+     "recall": carretera["recall"], "precision": carretera["precision"],
+     "auc": carretera["roc_auc"]},
+]), [ui.columna("conjunto", "Conjunto", "fuerte", secundario="detalle"),
+     ui.columna("recall", "Graves que detecta", "pct"),
+     ui.columna("precision", "Avisos que aciertan", "pct"),
+     ui.columna("auc", "ROC-AUC", "num", decimales=3)], ajustar=True)
+st.write("")
+ui.panel_info(
+    f"En carretera el modelo acierta más: detecta el {estilo.pct(carretera['recall'])} de los "
+    f"graves frente al {estilo.pct(metricas['recall'])}, y el ROC-AUC sube de "
+    f"{auc(metricas['roc_auc'])} a {auc(carretera['roc_auc'])}. También parte de otro sitio, "
+    f"porque ahí el accidente grave es menos raro: {estilo.pct(carretera['tasa_base'], 1)} de "
+    f"los casos frente al {estilo.pct(metricas['tasa_base'], 1)} del conjunto. Las dos columnas "
+    f"salen del mismo modelo, de la misma ejecución y con el mismo umbral, "
+    f"{str(metricas['umbral']).replace('.', ',')}.",
+    etiqueta="Por qué damos las dos")
 
 ui.cabecera_seccion(
     "Tramos: el modelo frente a ordenar por tráfico",
@@ -143,7 +178,9 @@ ui.rejilla([ui.lista_simple([
     "Carreteras del Estado, que es el 11 % de los accidentes y el 24 % de los "
     "fallecidos.",
     "No cubre Baleares, Canarias ni las carreteras forales de Navarra y el País Vasco. "
-    "De Navarra solo entra la AP-68, que es del Estado.",
+    "De Navarra solo entra la AP-68, que es del Estado. El modelo de gravedad sí aprendió "
+    "de toda España, islas incluidas. Por eso sus cifras se dan además sobre la carretera "
+    "peninsular, que es por donde pasa una ruta de esta web.",
     "No predice que vayas a tener un accidente. Estima cuánto riesgo acumula un tramo al cabo "
     "de un año, y qué gravedad tendría un accidente si ocurriera.",
     "Solo cuenta accidentes con víctimas. Los de daños materiales no están en los datos.",

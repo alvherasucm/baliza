@@ -77,10 +77,17 @@ with st.expander("Detalle técnico"):
         "2016-2023 sin 2020 y se mide con 2024. La sobredispersión provincial es de 18,2; por "
         "eso no sirve una Poisson."
     )
+    gravedad = datos.metricas_gravedad()
+    gravedad_carretera = datos.metricas_gravedad(datos.UNIVERSO_GRAVEDAD)
     st.markdown(
         "**Modelo de gravedad.** CatBoost binario, leve frente a grave o mortal, sobre el "
-        "accidente individual con 19 variables de condiciones. La puntuación no está "
-        "calibrada, así que solo se usa para ordenar."
+        "accidente individual con 19 variables de condiciones. Se entrena con 2016-2022 sin "
+        "2020, se ajusta con 2023 y se mide con los "
+        f"{estilo.num(gravedad['n'])} accidentes con víctimas de 2024: ROC-AUC "
+        f"{estilo.num(gravedad['roc_auc'], 3)}. La puntuación no está calibrada, así que solo "
+        "sirve para ordenar. La pantalla de gravedad coloca cada escenario entre los "
+        f"{estilo.num(gravedad_carretera['n'])} accidentes que ocurrieron en carretera "
+        "peninsular, fuera de ciudad."
     )
     st.markdown(
         "**Reproducibilidad.** Python 3.12, scikit-learn 1.9.0, CatBoost 1.2.10. "

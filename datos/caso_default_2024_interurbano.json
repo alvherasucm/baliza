@@ -1,0 +1,22 @@
+{
+  "MES": "8",
+  "DIA_SEMANA": "1",
+  "HORA": "13",
+  "TIPO_ACCIDENTE": "4.0",
+  "CONDICION_ILUMINACION": "1",
+  "TRAZADO_PLANTA": "1",
+  "ZONA": "1",
+  "TIPO_VIA": "3.0",
+  "COD_PROVINCIA": "23",
+  "CONDICION_FIRME": "1",
+  "CONDICION_NIVEL_CIRCULA": "1",
+  "TOTAL_VEHICULOS": 2,
+  "VISIB_RESTRINGIDA_POR": "1",
+  "CONDICION_METEO": "1",
+  "FRANJA_HORARIA": "Tarde",
+  "FIN_DE_SEMANA": "No",
+  "ESTACION": "Verano",
+  "TIPO_VIA_AGRUPADO": "Autopista_Autovia",
+  "REGION": "Andalucia",
+  "score_severo": 0.388654212328144
+}

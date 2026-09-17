@@ -146,7 +146,10 @@ import numpy as np
 import streamlit.logger
 
 streamlit.logger.set_log_level("error")
-from baliza.datos import BLOQUES_GRAVEDAD
+from sklearn.metrics import average_precision_score, roc_auc_score
+
+from baliza.datos import (BLOQUES_GRAVEDAD, CASOS_REFERENCIA_CARRETERA, UNIVERSO_GRAVEDAD,
+                          metricas_gravedad, referencia_gravedad)
 
 
 def puntuar(escenarios):
@@ -156,17 +159,52 @@ def puntuar(escenarios):
     return modelo.predict_proba(tabla)[:, 1]
 
 
-metricas = json.loads((DATOS / "metricas_test_2024.json").read_text(encoding="utf-8"))
-scores = pd.read_csv(DATOS / "scores_test_2024.csv").score_severo
+# El JSON de metricas y el CSV de scores tienen que salir de la misma ejecucion.
+# En la entrega del 16/09 no era asi: 30.944 alertas en el CSV frente a 32.145 en
+# el JSON. Con severo_real ya no hace falta creerse el fichero: se recalcula.
+tabla_scores = pd.read_csv(DATOS / "scores_test_2024.csv")
+comprobar("el CSV de scores trae etiqueta real y marca de universo",
+          {"score_severo", "severo_real", "interurbano_peninsular"} <= set(tabla_scores.columns),
+          ", ".join(tabla_scores.columns))
 comprobar("scores del test completos y sin nulos",
-          len(scores) == metricas["total_accidentes"] and scores.notna().all(),
-          f"{len(scores):,} filas")
-alertas = int((scores >= metricas["umbral"]).sum())
-if alertas != metricas["alertas_totales"]:
-    print(f"  [AVISO] {alertas:,} scores >= {metricas['umbral']} frente a "
-          f"{metricas['alertas_totales']:,} alertas en las metricas: preguntado a Lourdes")
+          len(tabla_scores) == metricas_gravedad()["n"] and tabla_scores.notna().all().all(),
+          f"{len(tabla_scores):,} filas")
 
-for nombre in ["caso_default_2024.json", "caso_default_2024_carretera.json"]:
+
+def recalcular(sub, umbral):
+    """Las mismas cifras que publica Lourdes, desde los scores y las etiquetas."""
+    y, s = sub.severo_real.to_numpy(), sub.score_severo.to_numpy()
+    aviso = s >= umbral
+    tp, fp = int((aviso & (y == 1)).sum()), int((aviso & (y == 0)).sum())
+    fn, tn = int((~aviso & (y == 1)).sum()), int((~aviso & (y == 0)).sum())
+    return {"n": len(sub), "leves": int((y == 0).sum()), "severos": int(y.sum()),
+            "TN": tn, "FP": fp, "FN": fn, "TP": tp, "alertas": int(aviso.sum()),
+            "precision": tp / (tp + fp), "recall": tp / (tp + fn),
+            "roc_auc": roc_auc_score(y, s), "pr_auc": average_precision_score(y, s)}
+
+
+for universo in ["global", UNIVERSO_GRAVEDAD]:
+    publicadas = metricas_gravedad(universo)
+    sub = tabla_scores if universo == "global" else tabla_scores[tabla_scores.interurbano_peninsular]
+    propias = recalcular(sub, publicadas["umbral"])
+    descuadres = [c for c, v in propias.items()
+                  if abs(v - publicadas[c]) > (1e-9 if isinstance(v, float) else 0)]
+    comprobar(f"metricas de {universo} reproducidas desde severo_real", not descuadres,
+              f"{propias['n']:,} accidentes, {propias['alertas']:,} alertas al umbral "
+              f"{publicadas['umbral']}" + (f" | descuadra: {descuadres}" if descuadres else ""))
+
+carretera = metricas_gravedad(UNIVERSO_GRAVEDAD)
+comprobar("la pantalla de gravedad se compara con la carretera peninsular",
+          referencia_gravedad().size == carretera["n"]
+          and referencia_gravedad("global").size == metricas_gravedad()["n"],
+          f"{referencia_gravedad().size:,} de {referencia_gravedad('global').size:,}")
+comprobar("en carretera el modelo acierta mas que en el test entero",
+          carretera["recall"] > metricas_gravedad()["recall"]
+          and carretera["roc_auc"] > metricas_gravedad()["roc_auc"],
+          f"recall {carretera['recall']:.1%} frente a {metricas_gravedad()['recall']:.1%}, "
+          f"ROC-AUC {carretera['roc_auc']:.4f} frente a {metricas_gravedad()['roc_auc']:.4f}")
+
+for nombre in ["caso_default_2024.json", *CASOS_REFERENCIA_CARRETERA]:
     if not (DATOS / nombre).exists():
         continue
     referencia = json.loads((DATOS / nombre).read_text(encoding="utf-8"))
@@ -191,7 +229,7 @@ comprobar("los bloques de la pantalla solo usan categorias del modelo", not inva
 
 # El texto de la pantalla afirma dos cosas del modelo. Si una entrega nueva las
 # cambia, esta prueba avisa antes de que lo haga el tribunal.
-fichero_base = next(DATOS / n for n in ["caso_default_2024_carretera.json",
+fichero_base = next(DATOS / n for n in [*CASOS_REFERENCIA_CARRETERA,
                                         "caso_default_2024.json"] if (DATOS / n).exists())
 base = json.loads(fichero_base.read_text(encoding="utf-8"))
 base.pop("score_severo")
@@ -218,9 +256,11 @@ lluvia = min(comparar("Tiempo", "Despejado", opcion)
              for opcion in ["Lluvia débil", "Lluvia fuerte", "Nieve"])
 comprobar("con lluvia o nieve puntua menos grave en todas las combinaciones", lluvia == 1.0,
           f"{lluvia:.0%}")
-noche = min(comparar("Momento del día", opcion, "Por la mañana (10:00)")
-            for opcion in ["De noche (23:00)", "De madrugada (4:00)"])
-comprobar("de noche o de madrugada puntua mas grave en la gran mayoria", noche >= 0.85,
+madrugada = comparar("Momento del día", "De madrugada (4:00)", "Por la mañana (10:00)")
+comprobar("de madrugada puntua mas grave que de dia en casi todas las combinaciones",
+          madrugada >= 0.95, f"{madrugada:.0%}")
+noche = comparar("Momento del día", "De noche (23:00)", "Por la mañana (10:00)")
+comprobar("de noche puntua mas grave que de dia en unas tres de cada cuatro", noche >= 0.70,
           f"{noche:.0%} de las combinaciones")
 
 titulo("3. Provincias (Miki)")

@@ -61,19 +61,39 @@ las pruebas de integración.
   siempre la etiqueta de texto.
 - **Cada pantalla que da un número** lleva al lado qué haría cualquiera a ojo, qué dice el
   modelo y cuánto se equivoca cada uno.
-- **El score de gravedad no está calibrado**: se enseña como puesto frente a los 101.996
-  accidentes del test de 2024 («más grave que 68 de cada 100»), nunca como porcentaje de
-  probabilidad ni como cociente entre dos escenarios.
+- **El score de gravedad no está calibrado**: se enseña como puesto («más grave que 68 de
+  cada 100»), nunca como porcentaje de probabilidad ni como cociente entre dos escenarios.
+- **La gravedad se compara con la red que cubre Baliza**: los 32.562 accidentes
+  interurbanos peninsulares del test de 2024, no los 101.996 del test entero, que es en dos
+  tercios urbano y puntúa más bajo. Fiabilidad da las dos columnas.
 - **Gravedad se compara con escenarios completos.** El usuario elige bloques coherentes
   (`BLOQUES_GRAVEDAD` en `baliza/datos.py`), nunca una variable suelta: el modelo trabaja
   con combinaciones.
 
 ## Contrato de gravedad
 
-`datos/` lleva, sin modificar, la segunda entrega de Lourdes: `caso_default_2024.json`,
-`scores_test_2024.csv`, `labels_categorias.json` y `feature_importance.json`. Si llega
-`datos/caso_default_2024_carretera.json`, la pantalla lo usa como caso de referencia sin
-tocar código; mientras no exista, se usa el caso urbano trasladado a autovía.
+`datos/` lleva, sin modificar, la entrega de Lourdes: `caso_default_2024.json`,
+`scores_test_2024.csv`, `metricas_test_2024.json`, `labels_categorias.json` y
+`feature_importance.json`.
+
+- `scores_test_2024.csv`: 101.996 filas en el orden de la entrega, con `score_severo`,
+  `severo_real` (0/1) e `interurbano_peninsular` (True/False). Con la etiqueta dentro, el
+  banco de pruebas no se cree el fichero de métricas: lo recalcula.
+- `interurbano_peninsular`, definido por Lourdes: `ZONA` = 1 (Carretera, que en el modelo se
+  distingue de Travesía, Calle y Autopista o autovía urbana) y `COD_PROVINCIA` fuera de 7, 35,
+  38, 51 y 52 (Balears, Las Palmas, Santa Cruz de Tenerife, Ceuta y Melilla). Ojo al
+  redactar: `ZONA` no filtra por titularidad, así que el subconjunto incluye carreteras
+  autonómicas y provinciales y deja fuera las travesías. No es el mismo universo que el del
+  modelo de tramos, que sí es Red del Estado.
+- `metricas_test_2024.json`: dos bloques, `global` e `interurbano_peninsular`, cada uno con
+  la matriz de confusión entera al umbral 0,5. `baliza/datos.py` traduce los nombres y
+  sigue leyendo el formato plano anterior por si hiciera falta volver atrás.
+- Corrección del 17/09: el JSON anterior daba 32.145 alertas frente a las 30.944 del CSV
+  porque venía de otra ejecución. Las cifras oficiales pasan a ser recall 68,37 %,
+  precisión 22,14 %, ROC-AUC 0,7910 y PR-AUC 0,4108.
+- Si llega `datos/caso_default_2024_interurbano.json` (o `..._carretera.json`), la pantalla
+  lo usa como caso de referencia sin tocar código; mientras no exista, se usa el caso
+  urbano trasladado a autovía.
 
 ## Contrato de provincias
 

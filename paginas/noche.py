@@ -3,8 +3,11 @@ lo unico sobre lo que decide quien va a conducir.
 
 El score de CatBoost no esta calibrado, asi que ni se ensena como porcentaje ni
 se divide entre escenarios: solo se dice en que puesto queda cada salida frente
-a los accidentes reales de 2024. Y el usuario elige bloques completos, no
-variables sueltas, porque el modelo trabaja con combinaciones.
+a los accidentes reales de 2024. La comparacion va contra los interurbanos
+peninsulares, que son la red que cubre Baliza. El test entero es en dos tercios
+urbano y puntua mas bajo, asi que colocaria cualquier salida por carretera mas
+arriba de lo que le toca. El usuario elige bloques completos y no variables
+sueltas, porque el modelo trabaja con combinaciones.
 """
 import streamlit as st
 
@@ -31,13 +34,19 @@ etiquetas = datos.etiquetas_gravedad()
 
 
 def opcion_inicial(bloque: str, salida: str) -> str:
-    """La salida A arranca en el caso de referencia; la B solo cambia la hora."""
+    """La salida A arranca en la opcion que mas se parece al caso de referencia;
+    la B solo cambia la hora.
+
+    Se busca el mejor encaje y no la coincidencia exacta. Un accidente real trae
+    su hora y su mes concretos (las 13:00 de un lunes de agosto), y cada opcion
+    lleva un valor representativo de su franja (las 17:00 de la tarde, julio para
+    el verano). Con coincidencia exacta, un accidente de agosto arrancaba en
+    invierno solo porque invierno es el primero de la lista."""
     if salida == "B" and bloque in DEFECTO_B:
         return DEFECTO_B[bloque]
-    for opcion, valores in BLOQUES[bloque].items():
-        if all(caso.get(variable) == valor for variable, valor in valores.items()):
-            return opcion
-    return next(iter(BLOQUES[bloque]))
+    return max(BLOQUES[bloque],
+               key=lambda opcion: sum(caso.get(variable) == valor for variable, valor
+                                      in BLOQUES[bloque][opcion].items()))
 
 
 def etiqueta(variable: str) -> str:
@@ -50,7 +59,8 @@ ui.cabecera_pagina(
     "Cuánto cambia la gravedad según cuándo sales",
     "Compara dos salidas por la misma carretera y mira cómo cambia la gravedad de un "
     "accidente, si llega a ocurrir.",
-    meta=[("Referencia", f"{estilo.num(datos.referencia_gravedad().size)} accidentes de 2024"),
+    meta=[("Referencia",
+           f"{estilo.num(datos.referencia_gravedad().size)} accidentes en carretera de 2024"),
           ("Modelo", "gravedad leve / grave o mortal")],
 )
 
@@ -83,9 +93,11 @@ else:
         f"Las dos salidas quedan a menos de {UMBRAL_IGUALES} puestos. Para el modelo son "
         f"casi iguales.")
 
-ayuda = ("De cada 100 accidentes con víctimas de 2024, cuántos puntúa el modelo por debajo "
-         "de esta salida. Es un puesto en una clasificación; el modelo no da probabilidades.")
-ui.cabecera_seccion("Resultado", "Puesto de cada salida frente a los accidentes reales de 2024.")
+ayuda = ("De cada 100 accidentes con víctimas en carretera interurbana de 2024, cuántos "
+         "puntúa el modelo por debajo de esta salida. Es un puesto en una clasificación; el "
+         "modelo no da probabilidades.")
+ui.cabecera_seccion("Resultado",
+                    "Puesto de cada salida frente a los accidentes reales en carretera de 2024.")
 ui.rejilla([
     ui.tarjeta_cifra(f"Salida {salida} · más grave que", f"{puesto:.0f}", unidad="de cada 100",
                      ayuda=ayuda, extra=f'<div class="bz-card-foot">{ui.etiqueta_riesgo(banda)}</div>')
@@ -94,27 +106,31 @@ ui.rejilla([
                       unidad="puestos" if lectura_valor != "≈" else None,
                       pie=lectura_pie, clase="bz-feature")])
 
-origen = ("un accidente real en carretera de 2024, el de gravedad mediana" if es_de_carretera
+origen = ("un accidente real de 2024 de los más corrientes en esta red, con la gravedad "
+          "mediana de su grupo" if es_de_carretera
           else "un accidente real de 2024 de gravedad mediana, pasado a carretera")
 ui.panel_info(
     f"Todo lo que no eliges se toma de {origen}: "
     f"{etiqueta('TIPO_ACCIDENTE').lower()}, {int(caso['TOTAL_VEHICULOS'])} vehículos, "
-    f"{etiqueta('VISIB_RESTRINGIDA_POR').lower()}, circulación en "
+    f"{etiqueta('VISIB_RESTRINGIDA_POR').lower()}, el tráfico en "
     f"{etiqueta('CONDICION_NIVEL_CIRCULA').lower()} y provincia de {etiqueta('COD_PROVINCIA')}.",
     etiqueta="Condiciones fijas")
 
-metricas = datos.metricas_gravedad()
+# Las cifras del punto de operacion son las del mismo universo con el que se
+# compara la pantalla, no las del test entero: en carretera el modelo acierta mas.
+metricas = datos.metricas_gravedad(datos.UNIVERSO_GRAVEDAD)
 ui.conclusiones([
-    ("La noche agrava el accidente",
-     "Coincide con lo que esperaría cualquiera. En casi todas las combinaciones de esta "
-     "pantalla, un accidente de noche o de madrugada puntúa más grave que uno de día."),
+    ("La madrugada es lo que más agrava",
+     "Coincide con lo que esperaría cualquiera. De madrugada el accidente puntúa más grave "
+     "que de día en casi todas las combinaciones de esta pantalla. De noche también, aunque "
+     "no siempre: en unas tres de cada cuatro."),
     ("Con lluvia o nieve puntúa menos grave",
      "Va contra la intuición y se repite en todas las combinaciones de esta pantalla. El "
      "modelo no explica por qué."),
     ("Prefiere avisar de más",
-     f"De cada 10 accidentes graves detecta 7. A cambio, de cada 10 avisos solo "
-     f"{metricas['precision_severo'] * 10:.0f} acaban siendo graves: se ajustó para que se le "
-     f"escapen pocos accidentes graves, aunque dé más falsas alarmas."),
+     f"En carretera detecta {metricas['recall'] * 10:.0f} de cada 10 accidentes graves. El "
+     f"precio es que solo acierta el {estilo.pct(metricas['precision'])} de los avisos: está "
+     f"ajustado para que se le escapen pocos, aunque avise de más."),
 ])
 
 st.write("")
@@ -143,7 +159,12 @@ with st.expander("Cómo calculamos este indicador"):
         "ocurrido y no dice nada de si vas a tenerlo. Su puntuación no está calibrada como "
         "probabilidad, por eso no se muestra en porcentaje. Lo que se enseña es el puesto de "
         "cada salida entre los "
-        f"{estilo.num(datos.referencia_gravedad().size)} accidentes con víctimas de 2024.")
+        f"{estilo.num(datos.referencia_gravedad().size)} accidentes con víctimas ocurridos en "
+        "2024 en carretera interurbana peninsular: fuera de ciudad y sin islas, Ceuta ni "
+        "Melilla. El test "
+        f"completo tiene {estilo.num(datos.referencia_gravedad('global').size)} accidentes, dos "
+        "tercios de ellos urbanos, que puntúan más bajo. Comparando contra ese conjunto, "
+        "cualquier salida por carretera saldría mejor colocada de lo que le toca.")
     st.markdown(
         "**Niveles.** Los mismos cortes que en los tramos: Bajo por debajo del puesto 50, Medio "
         "hasta el 80, Alto hasta el 95 y Muy alto el 5\u00a0% más grave.")

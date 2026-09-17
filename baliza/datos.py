@@ -205,14 +205,55 @@ def ficha_tramos() -> dict:
     return json.loads((DATOS / "ficha_modelo.json").read_text(encoding="utf-8"))
 
 
+# Universo con el que se compara un escenario de gravedad. El test completo es en
+# dos tercios urbano y puntua mas bajo, asi que colocar ahi una salida por
+# carretera la subiria de puesto sin merecerlo. Baliza solo cubre la Red del
+# Estado peninsular, y ese es el subconjunto con el que se compara.
+UNIVERSO_GRAVEDAD = "interurbano_peninsular"
+
+# La entrega de gravedad cambio de formato el 17/09: antes un bloque plano con
+# estos nombres, ahora uno por universo y con la matriz de confusion entera. Se
+# traduce aqui para que ninguna pagina dependa de la version del fichero.
+NOMBRES_METRICAS = {
+    "total_accidentes": "n", "leves_reales": "leves", "severos_reales": "severos",
+    "leves_correctamente_clasificados": "TN", "falsas_alertas": "FP",
+    "severos_no_detectados": "FN", "severos_detectados": "TP",
+    "alertas_totales": "alertas", "precision_severo": "precision",
+    "recall_severo": "recall",
+}
+
+# Caso de referencia de la pantalla de gravedad, por orden de preferencia. El de
+# Lourdes es la mediana del test completo y es urbano; si llega el mediano
+# interurbano, basta con dejarlo en datos/ para que se use.
+CASOS_REFERENCIA_CARRETERA = ("caso_default_2024_interurbano.json",
+                              "caso_default_2024_carretera.json")
+
+
 @st.cache_data(show_spinner=False)
 def metadata_gravedad() -> dict:
     return json.loads((DATOS / "metadata_gravedad.json").read_text(encoding="utf-8"))
 
 
 @st.cache_data(show_spinner=False)
-def metricas_gravedad() -> dict:
-    return json.loads((DATOS / "metricas_test_2024.json").read_text(encoding="utf-8"))
+def metricas_gravedad(universo: str = "global") -> dict:
+    """Acierto del modelo de gravedad en el test 2024, al umbral de la entrega.
+
+    Lourdes lo recalculo desde el mismo vector de scores que lee esta web, en una
+    sola ejecucion: la entrega anterior mezclaba dos y las alertas no cuadraban.
+    `global` son los 101.996 accidentes del test y es la cifra oficial;
+    `interurbano_peninsular`, los 32.562 de la red que cubre Baliza.
+    """
+    bruto = json.loads((DATOS / "metricas_test_2024.json").read_text(encoding="utf-8"))
+    if isinstance(bruto.get(universo), dict):
+        bloque = bruto[universo]
+    elif universo == "global":
+        bloque = bruto  # formato viejo: un unico bloque plano, sin universos
+    else:
+        raise KeyError(f"metricas_test_2024.json no trae el bloque {universo!r}")
+    metricas = {NOMBRES_METRICAS.get(k, k): v for k, v in bloque.items() if k != "conjunto"}
+    metricas["universo"] = universo
+    metricas["tasa_base"] = metricas["severos"] / metricas["n"]
+    return metricas
 
 
 @st.cache_data(show_spinner=False)
@@ -296,6 +337,8 @@ BLOQUES_GRAVEDAD = {
     "Carretera": {
         "Autovía": {"ZONA": "1", "TIPO_VIA": "3.0",
                     "TIPO_VIA_AGRUPADO": "Autopista_Autovia", "TRAZADO_PLANTA": "1"},
+        "Autovía, en curva": {"ZONA": "1", "TIPO_VIA": "3.0",
+                              "TIPO_VIA_AGRUPADO": "Autopista_Autovia", "TRAZADO_PLANTA": "2"},
         "Autopista de peaje": {"ZONA": "1", "TIPO_VIA": "1.0",
                                "TIPO_VIA_AGRUPADO": "Autopista_Autovia", "TRAZADO_PLANTA": "1"},
         "Convencional": {"ZONA": "1", "TIPO_VIA": "6.0",
@@ -318,12 +361,13 @@ ETIQUETAS_CORREGIDAS = {
 def caso_referencia_gravedad() -> tuple[dict, bool]:
     """Caso real del test 2024 con el score mas cercano a la mediana.
 
-    Devuelve (caso, es_de_carretera). Si Lourdes entrega el caso de carretera se
-    usa tal cual. Mientras tanto, el suyo es urbano y se traslada a autovia
-    cambiando solo el bloque de carretera.
+    Devuelve (caso, es_de_carretera). El de Lourdes es la mediana del test
+    completo y es urbano, asi que se traslada a autovia cambiando solo el bloque
+    de carretera. Si llega el mediano interurbano se usa tal cual.
     """
-    carretera = DATOS / "caso_default_2024_carretera.json"
-    es_de_carretera = carretera.exists()
+    carretera = next((DATOS / n for n in CASOS_REFERENCIA_CARRETERA
+                      if (DATOS / n).exists()), None)
+    es_de_carretera = carretera is not None
     origen = carretera if es_de_carretera else DATOS / "caso_default_2024.json"
     caso = json.loads(origen.read_text(encoding="utf-8"))
     caso.pop("score_severo", None)
@@ -350,10 +394,27 @@ def importancia_gravedad() -> pd.Series:
 
 
 @st.cache_data(show_spinner=False)
-def referencia_gravedad() -> np.ndarray:
-    """Los 101.996 scores del test 2024, ordenados."""
-    scores = pd.read_csv(DATOS / "scores_test_2024.csv").score_severo
-    return np.sort(scores.to_numpy(dtype=float))
+def scores_gravedad() -> pd.DataFrame:
+    """Los accidentes del test 2024 con su score, su gravedad real y si son
+    interurbanos peninsulares. El orden de las filas es el de la entrega."""
+    df = pd.read_csv(DATOS / "scores_test_2024.csv")
+    if "interurbano_peninsular" not in df.columns:
+        df["interurbano_peninsular"] = True
+    if "severo_real" not in df.columns:
+        df["severo_real"] = np.nan
+    return df
+
+
+@st.cache_data(show_spinner=False)
+def referencia_gravedad(universo: str = UNIVERSO_GRAVEDAD) -> np.ndarray:
+    """Scores del test 2024 ordenados, contra los que se coloca un escenario.
+
+    Por defecto solo los interurbanos peninsulares. `global` devuelve los 101.996.
+    """
+    scores = scores_gravedad()
+    if universo != "global":
+        scores = scores[scores.interurbano_peninsular]
+    return np.sort(scores.score_severo.to_numpy(dtype=float))
 
 
 def puntuar_gravedad(escenarios: list[dict]) -> np.ndarray:
@@ -365,14 +426,15 @@ def puntuar_gravedad(escenarios: list[dict]) -> np.ndarray:
     return modelo_gravedad().predict_proba(tabla)[:, 1]
 
 
-def percentil_gravedad(scores) -> np.ndarray:
+def percentil_gravedad(scores, universo: str = UNIVERSO_GRAVEDAD) -> np.ndarray:
     """Puesto de cada escenario frente a los accidentes reales de 2024, de 0 a 100.
     El score no esta calibrado: el orden es lo unico que se puede defender."""
-    return _rango_percentil(referencia_gravedad(), scores)
+    return _rango_percentil(referencia_gravedad(universo), scores)
 
 
 def banda_gravedad(percentiles) -> list:
-    """Mismas bandas que los tramos: 'Muy alto' es el 5% mas grave de 2024."""
+    """Mismas bandas que los tramos: 'Muy alto' es el 5% mas grave del universo
+    de referencia."""
     cortes = [-0.01] + [c * 100 for c in CUANTILES] + [100.01]
     return list(pd.cut(np.asarray(percentiles, dtype=float), bins=cortes,
                        labels=BANDAS, right=False))
