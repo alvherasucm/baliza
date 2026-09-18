@@ -29,6 +29,12 @@ def ventaja(valor) -> str:
     return f"{'+' if valor >= 0 else '−'}{auc(abs(valor))}"
 
 
+def ventaja_priorizacion(valor) -> str:
+    """Diferencia de ROC-AUC expresada como puntos porcentuales, no como acierto."""
+    signo = "+" if valor >= 0 else "−"
+    return f"{signo}{estilo.num(abs(valor) * 100, 1)} p.p."
+
+
 ui.cabecera_pagina(
     "Fiabilidad",
     "Qué sabemos y qué no",
@@ -42,9 +48,14 @@ ui.rejilla([
                      unidad="accidentes",
                      pie=f"frente a {estilo.num(ingenua.mae, 1)} de repetir el año anterior",
                      delta=f"−{estilo.pct(jerarquico.mejora_mae)}", tono="bueno"),
-    ui.tarjeta_cifra("Tramo · ROC-AUC", auc(auc_modelo),
-                     pie=f"frente a {auc(auc_trafico)} de ordenar solo por tráfico",
-                     delta=ventaja(auc_modelo - auc_trafico), tono="bueno"),
+    ui.tarjeta_cifra(
+        "Tramo · capacidad de priorización", estilo.pct(auc_modelo, 1),
+        ayuda="Si se compara un tramo que registró al menos un accidente en 2024 con otro "
+              "que no registró ninguno, el modelo asigna mayor riesgo al primero en el "
+              f"{estilo.pct(auc_modelo, 1)} de las comparaciones. No es un porcentaje de "
+              "predicciones acertadas.",
+        pie=f"frente al {estilo.pct(auc_trafico, 1)} de ordenar solo por tráfico",
+        delta=ventaja_priorizacion(auc_modelo - auc_trafico), tono="bueno"),
     ui.tarjeta_cifra("Gravedad · graves detectados", estilo.pct(metricas["recall"]),
                      pie=f"{estilo.pct(metricas['precision'])} de los avisos aciertan"),
 ])
