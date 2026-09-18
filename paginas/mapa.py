@@ -43,19 +43,31 @@ ui.cabecera_pagina(
 
 resumen = st.container()
 
+# Comparar rutas manda aqui las carreteras de la ruta elegida, para poder mirar
+# sus tramos sin perder el contexto.
+CARRETERAS = sorted(tramos.carretera.dropna().unique())
+llegan = [v for v in st.session_state.pop("carreteras_elegidas", []) if v in CARRETERAS]
+if llegan:
+    st.session_state["sel_carretera"] = llegan[0]
+if st.session_state.get("sel_carretera") not in ["Todas"] + CARRETERAS:
+    st.session_state["sel_carretera"] = "Todas"
+
 with ui.filtros():
-    c1, c2, c3, c4 = st.columns([3, 2, 2, 2], gap="medium")
+    c1, c2, c3, c4, c5 = st.columns([3, 2, 2, 2, 2], gap="medium")
     criterio = c1.selectbox("Ordenar por", list(CRITERIOS))
     tipos = sorted(tramos.tipo_via_presentacion.dropna().unique())
     tipo = c2.selectbox("Tipo de vía", ["Todos"] + tipos)
-    nivel = c3.selectbox("Nivel de riesgo", list(NIVELES))
-    cuantos = c4.slider("Tramos en la lista", 10, 100, 20, step=10)
+    carretera = c3.selectbox("Carretera", ["Todas"] + CARRETERAS, key="sel_carretera")
+    nivel = c4.selectbox("Nivel de riesgo", list(NIVELES))
+    cuantos = c5.slider("Tramos en la lista", 10, 100, 20, step=10)
     columna, explicacion = CRITERIOS[criterio]
     st.caption(explicacion)
 
 datos_filtrados = tramos[tramos.banda.astype(str).isin(NIVELES[nivel])]
 if tipo != "Todos":
     datos_filtrados = datos_filtrados[datos_filtrados.tipo_via_presentacion == tipo]
+if carretera != "Todas":
+    datos_filtrados = datos_filtrados[datos_filtrados.carretera == carretera]
 ranking = datos_filtrados.dropna(subset=[columna]).nlargest(int(cuantos), columna).copy()
 ranking["Tramo"] = (ranking.carretera + ", km " + ranking.pk_inicio_km.round().astype(int).astype(str)
                     + " a " + ranking.pk_fin_km.round().astype(int).astype(str))

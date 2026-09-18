@@ -26,7 +26,8 @@ baliza/componentes.py       componentes de interfaz reutilizables
 baliza/PrediccionTramos.py  inferencia del modelo de tramos (Anna)
 baliza/validador_entrada.py validación de entradas de usuario (Jose)
 baliza/predecir_provincia.py previsión del modelo de provincias (Miki)
-datos/                      tablas y contratos de los tres modelos
+datos/                      tablas y contratos de los tres modelos, más corredores_extra.json
+                            y comparativas.json (nuestros, no del equipo)
 modelos/                    modelo_final.joblib, modelo_gravedad.cbm y coeficientes_provincias.json
 static/fuentes/             tipografía Inter servida por la propia app (licencia OFL)
 static/marca/               logotipo e icono en SVG
@@ -134,6 +135,9 @@ Las páginas no escriben colores, CSS ni HTML: componen con los componentes.
 | `tabla`, `columna` | tabla de producto con números alineados y etiquetas |
 | `panel_info`, `en_desarrollo`, `estado_vacio` | contexto, trabajo pendiente y estados vacíos |
 
+Las nueve páginas: Inicio, Tu ruta, Comparar rutas, Riesgo por tramo, Mapa provincial, Tu
+provincia, Salir de noche, Fiabilidad y Cómo funciona.
+
 - Valores de diseño en un solo sitio: variables `--bz-*` de `estilos.css` (colores,
   espaciado 4/8/12/16/24/32/48/64, radios, sombras y tipografía) y `.streamlit/config.toml`.
 - Fondo en capas (`#F3F2EE` → `#F8F7F4` → blanco), acento azul petróleo `#0F3D4C`.
@@ -147,6 +151,40 @@ Las páginas no escriben colores, CSS ni HTML: componen con los componentes.
 
 ## Tramos (Anna)
 
+## Comparar rutas
+
+`paginas/comparar.py` sustituye a la antigua hoja de Flotas. Para un mismo trayecto compara
+las rutas posibles con el **mismo índice de ruta que «Tu ruta»**: la probabilidad anual de
+cada tramo ponderada por los kilómetros que se recorren en él, con la media nacional en 100.
+No hay indicador nuevo, y el cálculo vive una sola vez en `datos.evaluar_itinerario()`, que
+usan las dos pantallas.
+
+- **Solo se comparan rutas del mismo tipo de vía.** El índice mide el tramo con todo su
+  tráfico, así que una nacional vacía puntúa bajo aunque sea peor para quien pasa: sin este
+  filtro, Madrid–Sevilla recomendaría la N-630 frente a la A-66. En el catálogo la regla es
+  curatorial; en el CSV la aplica `resolver_trayecto()` con `DIFERENCIA_TIPO_VIA`.
+- **`datos/comparativas.json`** trae los trayectos del catálogo, cada uno con sus rutas y sus
+  etapas `[carretera, PK de salida, PK de llegada]`. Entran solo pares con las dos rutas en
+  autovía y al menos el 95 % de sus kilómetros aforados.
+- **`datos/corredores_extra.json`** amplía los corredores de Jose sin tocar su fichero:
+  `datos.corredores()` funde los dos y, cuando una ciudad está en los dos, manda su punto
+  kilométrico. Cada hito que añadimos sale del propio fichero de tramos, no de una fuente
+  externa: el primer o el último kilómetro aforado de la carretera, o un cambio de provincia.
+  Los extremos son aproximaciones de unos pocos kilómetros al punto de la ciudad.
+- **Por debajo de `COBERTURA_MINIMA_RUTA`** (90 % de kilómetros con aforo) el índice se
+  enseña, pero la ruta no se declara ganadora. Por debajo de `EMPATE_INDICE` (8 puntos) las
+  dos rutas se dan por equivalentes, igual que en «Salir de noche».
+- **El CSV acepta dos formatos.** `origen;destino;viajes_semana` resuelve el trayecto sobre los
+  corredores y ordena por índice, o por índice × viajes. El formato de tramos es el de la
+  antigua hoja de Flotas y **ejecuta el modelo sobre los datos del usuario**, con la validación
+  de Jose intacta: es la pieza de productivización y no se ha perdido.
+- **Límite conocido.** La ruta que sale de un origen y un destino es la mejor que se puede
+  armar con las carreteras medidas. Cuando el enlace real entre dos ciudades no está en la red
+  aforada (Zaragoza–Valencia, por ejemplo), el itinerario sale más largo que el de un
+  navegador. Los kilómetros van siempre a la vista para que se note.
+
+## Tramos (Anna)
+
 Las cifras de acierto del modelo de tramos salen de `datos/referencias_test_2024.json`
 (entrega de Anna, sin modificar): ROC-AUC del modelo, de ordenar solo por tráfico y de
 ordenar por los accidentes del año anterior, sobre los 6.730 tramos del test común de 2024,
@@ -154,7 +192,7 @@ y el desglose por tipo de vía. Fiabilidad y Cómo funciona las leen de ahí; ni
 escribe a mano. `pruebas_integracion.py` comprueba que el JSON cuadra con la ficha y con el
 modelo que se carga.
 
-Las páginas «Tu ruta», «Riesgo por tramo», «Mapa provincial» y «Flotas» siguen las
+Las páginas «Tu ruta», «Riesgo por tramo», «Mapa provincial» y «Comparar rutas» siguen las
 decisiones de `README_CAMBIOS.md` de Anna: tipos de vía con las tres categorías del modelo,
 probabilidad anual en porcentaje, filtros del ranking, mapa lineal y coroplético
 provincial. Cualquier cambio de lógica en estas páginas se consulta con ella antes.

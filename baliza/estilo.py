@@ -66,7 +66,7 @@ PAGINAS = [
     ("fiabilidad", "Fiabilidad", "paginas/fiabilidad.py", ":material/verified:", "Confianza"),
     ("como", "Cómo funciona", "paginas/como_funciona.py", ":material/account_tree:",
      "Confianza"),
-    ("flotas", "Flotas", "paginas/flotas.py", ":material/local_shipping:", "Empresas"),
+    ("comparar", "Comparar rutas", "paginas/comparar.py", ":material/alt_route:", "Explorar"),
 ]
 
 

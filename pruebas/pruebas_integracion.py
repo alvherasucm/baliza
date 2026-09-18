@@ -344,6 +344,107 @@ comprobar("Madrid en la previsión coincide con la función",
           abs(prevision.set_index("PROV").N_ACC_ESPERADO["Madrid"] - 1745.3) < 0.2,
           f"{int(prevision.cautela.sum())} provincias con nota de cautela")
 
+titulo("6. Corredores ampliados y catálogo de comparaciones")
+from baliza import datos as capa_datos  # noqa: E402
+
+tramos_2024 = capa_datos.tramos_puntuados()
+extra = json.loads((DATOS / "corredores_extra.json").read_text(encoding="utf-8"))
+corredores_todos = capa_datos.corredores()
+
+# Lo que añadimos nosotros no viene de una fuente externa: tiene que seguir
+# saliendo del fichero de tramos. Si Anna vuelve a generar las predicciones y un
+# extremo se mueve, esto lo caza aquí y no en la defensa.
+desviados = []
+for via, definicion in extra.items():
+    if via.startswith("_"):
+        continue
+    medidos = tramos_2024[tramos_2024.carretera == via]
+    if medidos.empty:
+        desviados.append(f"{via}: sin tramos en {capa_datos.ANIO}")
+        continue
+    limite_bajo, limite_alto = medidos.pk_inicio_km.min(), medidos.pk_fin_km.max()
+    for hito in definicion["hitos"]:
+        if not limite_bajo - 1 <= hito["pk"] <= limite_alto + 1:
+            desviados.append(f"{via}/{hito['ciudad']}: PK {hito['pk']} fuera de "
+                             f"[{limite_bajo:.1f}, {limite_alto:.1f}]")
+comprobar("cada hito que añadimos cae dentro del tramo aforado de su carretera",
+          not desviados, "; ".join(desviados) or f"{len(extra) - 1} carreteras")
+
+pisados = [via for via, definicion in extra.items() if not via.startswith("_")
+           for hito in definicion["hitos"]
+           if any(h["ciudad"] == hito["ciudad"] and h["pk"] != hito["pk"]
+                  for h in json.loads((DATOS / "corredores.json").read_text(
+                      encoding="utf-8")).get(via, {}).get("hitos", []))]
+comprobar("la ampliación no cambia ningún punto kilométrico de Jose", not pisados,
+          "; ".join(pisados) or "solo añade")
+comprobar("los hitos de cada corredor quedan ordenados por PK",
+          all(sorted(h["pk"] for h in d["hitos"]) == [h["pk"] for h in d["hitos"]]
+              for d in corredores_todos.values()),
+          f"{len(corredores_todos)} corredores")
+
+catalogo = capa_datos.comparativas()
+problemas = []
+for trayecto in catalogo:
+    evaluadas = [capa_datos.evaluar_itinerario([tuple(e) for e in r["etapas"]])
+                 for r in trayecto["rutas"]]
+    for definicion, resumen in zip(trayecto["rutas"], evaluadas):
+        etiqueta = f"{trayecto['id']}/{definicion['nombre']}"
+        if resumen["n_tramos"] < 5:
+            problemas.append(f"{etiqueta}: solo {resumen['n_tramos']} tramos")
+        if resumen["cobertura"] < 0.95:
+            problemas.append(f"{etiqueta}: cobertura {resumen['cobertura']:.0%}")
+        autovia = resumen["tramos"]
+        parte = (autovia[autovia.tipo_via == "Autopista_autovia"].km_en_ruta.sum()
+                 / autovia.km_en_ruta.sum())
+        if parte < 0.85:
+            problemas.append(f"{etiqueta}: solo {parte:.0%} de autovía")
+    indices = [r["indice"] for r in evaluadas]
+    if max(indices) - min(indices) < capa_datos.EMPATE_INDICE:
+        problemas.append(f"{trayecto['id']}: las rutas empatan ({min(indices):.0f} vs "
+                         f"{max(indices):.0f})")
+comprobar("el catálogo de comparaciones sigue siendo válido", not problemas,
+          "; ".join(problemas) or f"{len(catalogo)} trayectos")
+for trayecto in catalogo:
+    indices = [capa_datos.evaluar_itinerario([tuple(e) for e in r["etapas"]])["indice"]
+               for r in trayecto["rutas"]]
+    print(f"  {trayecto['origen']} – {trayecto['destino']}: "
+          + " vs ".join(f"{r['nombre']} {i:.0f}"
+                        for r, i in zip(trayecto["rutas"], indices)))
+
+# El CSV por ciudades no puede devolver rodeos: si la ruta buena existe, tiene que
+# ganar a la larga, y una ciudad mal escrita tiene que volver con sugerencia.
+santander = capa_datos.resolver_trayecto("Madrid", "Santander")
+comprobar("Madrid–Santander resuelve por Burgos y Palencia, no por A Coruña",
+          santander["estado"] == "Resuelta" and santander["mejor"]["km_declarados"] < 600,
+          f"{santander['mejor']['km_declarados']:.0f} km por "
+          f"{santander['mejor']['paso']}")
+# La trampa del indicador: la N-630 va casi vacia, asi que puntua bajo aunque sea
+# peor para quien pasa. Si el CSV la recomendase frente a la A-66, la pantalla
+# estaria dando un consejo indefendible.
+madrid_sevilla = capa_datos.resolver_trayecto("Madrid", "Sevilla")
+comprobar("el CSV no recomienda una nacional vacía frente a la autovía equivalente",
+          madrid_sevilla["mejor"]["parte_autovia"] >= 0.85
+          and "N-630" not in madrid_sevilla["mejor"]["vias"],
+          f"{' + '.join(madrid_sevilla['mejor']['vias'])}, "
+          f"{madrid_sevilla['mejor']['parte_autovia']:.0%} de autovía, "
+          f"{madrid_sevilla['descartadas_por_tipo']} rutas descartadas por tipo de vía")
+comprobar("y coincide con lo que dice el catálogo para ese mismo trayecto",
+          abs(madrid_sevilla["mejor"]["indice"]
+              - min(capa_datos.evaluar_itinerario([tuple(e) for e in r["etapas"]])["indice"]
+                    for r in catalogo[0]["rutas"])) < 1e-9)
+
+inventada = capa_datos.resolver_trayecto("Sevila", "Madrid")
+comprobar("una ciudad mal escrita vuelve con sugerencia y sin excepción",
+          inventada["estado"] == "Ciudad no reconocida" and "Sevilla" in inventada["aviso"],
+          inventada["aviso"])
+sin_ruta = capa_datos.resolver_trayecto("Madrid", "Adra")
+comprobar("un trayecto fuera de la red cubierta se explica en vez de fallar",
+          sin_ruta["estado"] in ("Sin ruta", "Cobertura insuficiente"), sin_ruta["estado"])
+comprobar("el índice de una ruta de una sola etapa coincide con el de Tu ruta",
+          abs(capa_datos.evaluar_itinerario([("A-4", 4.0, 535.0)])["indice"]
+              - capa_datos.indice_ruta(
+                  capa_datos.tramos_de_itinerario([("A-4", 4.0, 535.0)]))) < 1e-9)
+
 titulo("RESUMEN")
 print("Sin fallos: los tres modelos conviven en el mismo entorno."
       if not fallos else f"{len(fallos)} fallos: {fallos}")

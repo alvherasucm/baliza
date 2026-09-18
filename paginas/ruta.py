@@ -41,10 +41,10 @@ with ui.filtros():
 pk = {h["ciudad"]: h["pk"] for h in hitos}
 pk0, pk1 = sorted([pk[origen], pk[destino]])
 
-ruta = tramos[tramos.carretera == via].copy()
-if provincia := corredores[via].get("provincia"):
-    ruta = ruta[ruta.provincia == provincia]
-ruta = ruta[(ruta.pk_fin_km > pk0) & (ruta.pk_inicio_km < pk1)].sort_values("pk_inicio_km")
+# El calculo vive en datos.py y lo comparten esta pantalla y Comparar rutas, para
+# que el indice no pueda salir distinto en dos sitios.
+resumen = datos.evaluar_itinerario([(via, pk0, pk1)])
+ruta = resumen["tramos"]
 
 if origen == destino or ruta.empty:
     st.write("")
@@ -52,14 +52,10 @@ if origen == destino or ruta.empty:
                     "El trayecto necesita dos ciudades diferentes del mismo corredor.")
     st.stop()
 
-ruta["km_en_ruta"] = (ruta.pk_fin_km.clip(upper=pk1) - ruta.pk_inicio_km.clip(lower=pk0))
 valida = ruta[ruta.PROB_ACCIDENTE_TRAMO_ANIO.notna()]
-media_pais = tramos.PROB_ACCIDENTE_TRAMO_ANIO.mean()
-indice = (np.average(valida.PROB_ACCIDENTE_TRAMO_ANIO, weights=valida.km_en_ruta)
-          / media_pais * 100)
-km_cubiertos = ruta.km_en_ruta.sum()
-sin_dato = max(0.0, (pk1 - pk0) - km_cubiertos)
-en_peor = int(valida.banda.isin(["Alto", "Muy alto"]).sum())
+indice = resumen["indice"]
+sin_dato = resumen["km_sin_medir"]
+en_peor = resumen["en_lo_peor"]
 
 st.write("")
 ui.rejilla([
@@ -137,7 +133,7 @@ ui.cabecera_seccion("Los tres puntos a vigilar",
 peores = valida.nlargest(3, "PROB_ACCIDENTE_TRAMO_ANIO")
 ui.lista_riesgo([
     (f"{fila.carretera}, km {fila.pk_inicio_km:.0f} a {fila.pk_fin_km:.0f} · {fila.provincia}",
-     f"Entre el {100 - fila.percentil:.0f} % de tramos con más riesgo de España · "
+     f"Entre el {max(1, round(100 - fila.percentil))} % de tramos con más riesgo de España · "
      f"{estilo.num(fila.longitud_km, 1)} km · {_trafico(fila.imd_total)}",
      fila.banda)
     for _, fila in peores.iterrows()

@@ -1,0 +1,51 @@
+{
+  "_leeme": "Ampliación de corredores.json hecha por la app, no por el equipo. corredores.json (de Jose) no se toca: baliza/datos.py funde los dos al cargar y, cuando una ciudad está en los dos, manda el punto kilométrico de Jose. Cada hito de aquí sale del propio fichero de tramos, no de una fuente externa: 'extremo' es el primer o el último kilómetro aforado de esa carretera, y 'frontera' es el kilómetro exacto en el que cambia de provincia. Los extremos son aproximaciones de unos pocos kilómetros al punto de la ciudad, y pruebas/pruebas_integracion.py los vuelve a comprobar contra datos/predicciones_tramos_2024.csv en cada ejecución.",
+  "A-2": {
+    "nombre": "Madrid - Barcelona",
+    "fuente": "Amplía el corredor de Jose, que terminaba en Zaragoza. Barcelona es el final del tramo aforado de la A-2 en su provincia (PK 610,7). Entre los PK 340 y 431 la A-2 no tiene aforo en 2024: son 91 km que ninguna ruta puede medir y que la app avisa aparte.",
+    "hitos": [
+      {"ciudad": "Barcelona", "pk": 610.7}
+    ]
+  },
+  "A-44": {
+    "nombre": "Bailén - Granada",
+    "fuente": "Carretera completa con aforo continuo (184,0 km medidos de 184,0). Bailén es el PK 0, donde arranca en la A-4, y Granada el último kilómetro aforado.",
+    "hitos": [
+      {"ciudad": "Bailén", "pk": 0.0},
+      {"ciudad": "Granada", "pk": 184.0}
+    ]
+  },
+  "A-67": {
+    "nombre": "Palencia - Santander",
+    "fuente": "Aforo continuo (204,5 km medidos de 205,2). Palencia es el PK 0, donde arranca en la A-62, y Santander el último kilómetro aforado.",
+    "hitos": [
+      {"ciudad": "Palencia", "pk": 0.0},
+      {"ciudad": "Santander", "pk": 205.2}
+    ]
+  },
+  "A-52": {
+    "nombre": "Rías Baixas: Zamora - Pontevedra",
+    "fuente": "Aforo continuo (306,2 km medidos de 306,2). Zamora es el PK 0 y Pontevedra el último kilómetro aforado. Ourense es la frontera de provincia entre Zamora y Ourense, exacta en el fichero de tramos.",
+    "hitos": [
+      {"ciudad": "Zamora", "pk": 0.0},
+      {"ciudad": "Ourense", "pk": 111.7},
+      {"ciudad": "Pontevedra", "pk": 306.2}
+    ]
+  },
+  "AP-9": {
+    "nombre": "Atlántico: A Coruña - Pontevedra",
+    "fuente": "Aforo continuo (175,4 km medidos de 175,4). Los dos hitos son los extremos aforados.",
+    "hitos": [
+      {"ciudad": "A Coruña", "pk": 2.5},
+      {"ciudad": "Pontevedra", "pk": 177.9}
+    ]
+  },
+  "A-30": {
+    "nombre": "Albacete - Murcia",
+    "fuente": "Aforo continuo (193,0 km medidos de 193,0). Albacete es el PK 0 y Murcia el último kilómetro aforado.",
+    "hitos": [
+      {"ciudad": "Albacete", "pk": 0.3},
+      {"ciudad": "Murcia", "pk": 193.3}
+    ]
+  }
+}

@@ -44,11 +44,11 @@ ui.cabecera_seccion("Qué puedes hacer con Baliza",
 
 MODULOS = [
     ("ruta", "Cuánto riesgo acumula un trayecto y dónde se concentra."),
+    ("comparar", "Dos formas de hacer el mismo viaje: cuál acumula menos riesgo."),
     ("mapa", "Ranking de tramos, con varios criterios para ordenarlos."),
     ("mapa_provincial", "El riesgo de cada provincia en un mapa, con la Red del Estado = 100."),
     ("provincia", "Una provincia frente a la media del país, año a año."),
     ("noche", "Cuánto cambia la gravedad según cuándo y cómo sales."),
-    ("flotas", "Puntúa las rutas habituales de una flota."),
     ("fiabilidad", "Cuánto acierta cada modelo y qué no puede hacer."),
     ("como", "Cómo se pasa de los datos de la DGT a la nota de cada tramo."),
 ]

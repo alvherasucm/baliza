@@ -19,6 +19,15 @@ sys.path.insert(0, str(RAIZ / "baliza"))
 
 ANIO = 2024
 
+# Ampliacion propia de los corredores del equipo, deducida del fichero de tramos
+CORREDORES_EXTRA = DATOS / "corredores_extra.json"
+# Catalogo de trayectos con dos formas de ir, para la pantalla de comparacion
+COMPARATIVAS = DATOS / "comparativas.json"
+# Por debajo de esta parte de kilometros con aforo, una ruta no se declara ganadora
+COBERTURA_MINIMA_RUTA = 0.90
+# Diferencia de indice por debajo de la cual dos rutas se consideran iguales
+EMPATE_INDICE = 8.0
+
 # Modelo de provincias de Miki: coeficientes en JSON y la funcion en
 # baliza/predecir_provincia.py, los dos sin modificar.
 COEFICIENTES_PROVINCIAS = MODELOS / "coeficientes_provincias.json"
@@ -194,15 +203,314 @@ def metricas_provincias() -> pd.DataFrame:
 
 @st.cache_data(show_spinner=False)
 def corredores() -> dict:
-    """Corredores de Jose. Las vias discontinuas (AP-7, A-7) traen el campo
-    `provincia` y la ruta se recorta a ella: sin eso, un corredor de Malaga se
-    comeria tramos de Tarragona. Lo vigila pruebas/auditar_corredores.py."""
-    return json.loads((DATOS / "corredores.json").read_text(encoding="utf-8"))
+    """Corredores de Jose, ampliados con los nuestros.
+
+    Las vias discontinuas (AP-7, A-7) traen el campo `provincia` y la ruta se
+    recorta a ella: sin eso, un corredor de Malaga se comeria tramos de
+    Tarragona. Lo vigila pruebas/auditar_corredores.py.
+
+    `corredores.json` no se toca, que es fichero del equipo. Lo que falta vive
+    en `corredores_extra.json`, deducido del propio fichero de tramos, y se
+    funde aqui. Cuando una ciudad esta en los dos, manda el punto kilometrico
+    de Jose: lo nuestro solo rellena huecos.
+    """
+    base = json.loads((DATOS / "corredores.json").read_text(encoding="utf-8"))
+    if not CORREDORES_EXTRA.exists():
+        return base
+    extra = json.loads(CORREDORES_EXTRA.read_text(encoding="utf-8"))
+    for via, definicion in extra.items():
+        if via.startswith("_"):
+            continue
+        actual = base.setdefault(via, {"nombre": via, "hitos": []})
+        if definicion.get("nombre"):
+            actual["nombre"] = definicion["nombre"]
+        if definicion.get("provincia"):
+            actual.setdefault("provincia", definicion["provincia"])
+        conocidas = {hito["ciudad"] for hito in actual["hitos"]}
+        actual["hitos"] = sorted(
+            actual["hitos"] + [h for h in definicion.get("hitos", [])
+                               if h["ciudad"] not in conocidas],
+            key=lambda hito: hito["pk"])
+    return base
 
 
 @st.cache_data(show_spinner=False)
 def ficha_tramos() -> dict:
     return json.loads((DATOS / "ficha_modelo.json").read_text(encoding="utf-8"))
+
+
+# ------------------------------------------------------------- itinerarios
+
+@st.cache_data(show_spinner=False)
+def comparativas() -> list:
+    """Trayectos con dos formas de ir, ya validadas. Solo entran pares cuyas dos
+    rutas son del mismo tipo de via: el indice mide el tramo con todo su
+    trafico, asi que comparar una autovia con una nacional vacia daria la
+    vuelta al resultado."""
+    if not COMPARATIVAS.exists():
+        return []
+    return json.loads(COMPARATIVAS.read_text(encoding="utf-8"))["trayectos"]
+
+
+@st.cache_data(show_spinner=False)
+def hitos_por_ciudad() -> dict:
+    """Ciudad -> {carretera: punto kilometrico}. Es el grafo con el que se
+    resuelve un origen y un destino escritos por el usuario."""
+    indice = {}
+    for via, definicion in corredores().items():
+        for hito in definicion["hitos"]:
+            indice.setdefault(hito["ciudad"], {})[via] = float(hito["pk"])
+    return indice
+
+
+@st.cache_data(show_spinner=False)
+def ciudades_red() -> list:
+    """Las ciudades que el usuario puede escribir, en orden alfabetico."""
+    return sorted(hitos_por_ciudad())
+
+
+def _normalizar(texto: str) -> str:
+    """Para comparar lo que escribe el usuario: sin acentos, sin mayusculas y
+    sin espacios de mas. 'sevila' no cuela, pero ' SEVILLA ' si."""
+    import unicodedata
+    plano = unicodedata.normalize("NFKD", str(texto).strip().lower())
+    return "".join(c for c in plano if not unicodedata.combining(c))
+
+
+def buscar_ciudad(texto: str) -> tuple:
+    """Devuelve (ciudad, sugerencia). Si la encuentra, sugerencia es None; si no,
+    propone la mas parecida para que el aviso sea util y no un simple 'no existe'."""
+    from difflib import get_close_matches
+
+    ciudades = ciudades_red()
+    plano = {_normalizar(c): c for c in ciudades}
+    clave = _normalizar(texto)
+    if clave in plano:
+        return plano[clave], None
+    parecidas = get_close_matches(clave, list(plano), n=1, cutoff=0.75)
+    return None, plano[parecidas[0]] if parecidas else None
+
+
+def tramos_de_itinerario(etapas) -> pd.DataFrame:
+    """Los tramos que recorre un itinerario, con los kilometros que se hacen en
+    cada uno. Una etapa es (carretera, pk inicial, pk final); un itinerario son
+    una o varias encadenadas."""
+    tramos = tramos_puntuados()
+    piezas = []
+    for carretera, pk_salida, pk_llegada in etapas:
+        pk_salida, pk_llegada = float(pk_salida), float(pk_llegada)
+        pk0, pk1 = sorted([pk_salida, pk_llegada])
+        trozo = tramos[tramos.carretera == carretera]
+        provincia = corredores().get(carretera, {}).get("provincia")
+        if provincia:
+            trozo = trozo[trozo.provincia == provincia]
+        trozo = trozo[(trozo.pk_fin_km > pk0) & (trozo.pk_inicio_km < pk1)].copy()
+        trozo["km_en_ruta"] = (trozo.pk_fin_km.clip(upper=pk1)
+                               - trozo.pk_inicio_km.clip(lower=pk0))
+        # En orden de marcha: por la A-4 de Sevilla a Madrid los PK van hacia atras
+        piezas.append(trozo.sort_values("pk_inicio_km",
+                                        ascending=pk_llegada >= pk_salida))
+    if not piezas:
+        return tramos.iloc[:0].assign(km_en_ruta=0.0, km_desde_salida=0.0,
+                                      km_hasta_ahi=0.0)
+    ruta = pd.concat(piezas).reset_index(drop=True)
+    # Kilometro del viaje en el que se entra y se sale de cada tramo. Es el eje
+    # del perfil: dos rutas distintas no comparten puntos kilometricos, pero si
+    # comparten "cuanto llevas recorrido".
+    ruta["km_hasta_ahi"] = ruta.km_en_ruta.cumsum()
+    ruta["km_desde_salida"] = ruta.km_hasta_ahi - ruta.km_en_ruta
+    return ruta
+
+
+def indice_ruta(tramos: pd.DataFrame) -> float:
+    """El KPI de Baliza: la probabilidad anual de cada tramo, ponderada por los
+    kilometros que se recorren en el, con la media nacional en 100. Misma
+    formula en Tu ruta y en Comparar rutas, para que no puedan divergir."""
+    validos = tramos[tramos.PROB_ACCIDENTE_TRAMO_ANIO.notna()]
+    if not len(validos) or validos.km_en_ruta.sum() <= 0:
+        return float("nan")
+    media = tramos_puntuados().PROB_ACCIDENTE_TRAMO_ANIO.mean()
+    return float(np.average(validos.PROB_ACCIDENTE_TRAMO_ANIO,
+                            weights=validos.km_en_ruta) / media * 100)
+
+
+def evaluar_itinerario(etapas) -> dict:
+    """Resumen de un itinerario: indice, kilometros, cobertura de aforo y por
+    donde pasa. `km_declarados` son los que separan origen y destino segun los
+    hitos; `km_medidos`, los que tienen aforo en 2024. La diferencia es lo que
+    la pantalla avisa que no puede medir."""
+    etapas = [tuple(e) for e in etapas]
+    tramos = tramos_de_itinerario(etapas)
+    declarados = sum(abs(float(pk1) - float(pk0)) for _, pk0, pk1 in etapas)
+    medidos = float(tramos.km_en_ruta.sum())
+    cobertura = medidos / declarados if declarados else 0.0
+    validos = tramos[tramos.PROB_ACCIDENTE_TRAMO_ANIO.notna()]
+    return {
+        "etapas": etapas,
+        "tramos": tramos,
+        "n_tramos": int(len(tramos)),
+        "indice": indice_ruta(tramos),
+        "km_declarados": declarados,
+        "km_medidos": medidos,
+        "km_sin_medir": max(0.0, declarados - medidos),
+        "cobertura": cobertura,
+        "fiable": cobertura >= COBERTURA_MINIMA_RUTA,
+        "provincias": list(dict.fromkeys(tramos.provincia)),
+        "vias": list(dict.fromkeys(tramos.carretera)),
+        "en_lo_peor": int(validos.banda.isin(["Alto", "Muy alto"]).sum()),
+        "parte_autovia": (
+            float(tramos[tramos.tipo_via == "Autopista_autovia"].km_en_ruta.sum() / medidos)
+            if medidos else 0.0),
+    }
+
+
+@st.cache_data(show_spinner=False)
+def _vecinas() -> dict:
+    """Ciudad -> {ciudad alcanzable sin cambiar de carretera: [carreteras]}.
+
+    Dentro de un corredor todos sus hitos se alcanzan entre si, asi que esto es
+    el grafo de una sola etapa. Se calcula una vez y vale para todo el CSV."""
+    hitos = hitos_por_ciudad()
+    grafo = {}
+    for via, definicion in corredores().items():
+        ciudades = [h["ciudad"] for h in definicion["hitos"]]
+        for a in ciudades:
+            for b in ciudades:
+                if a != b:
+                    grafo.setdefault(a, {}).setdefault(b, []).append(via)
+    return grafo
+
+
+# Cuatro carreteras encadenadas: con tres, Valencia a Santander se iba por A Coruña
+# porque la ruta buena (Madrid, Tordesillas, Palencia) necesita una etapa mas
+MAX_ETAPAS_RUTA = 4
+# Cuantos itinerarios se llegan a evaluar contra los datos por trayecto
+MAX_CANDIDATOS = 8
+# Dos rutas solo se comparan si son del mismo tipo de via. El indice mide el tramo
+# con todo su trafico, asi que una nacional vacia puntua bajo aunque sea peor para
+# quien pasa: sin este filtro, el CSV recomendaria la N-630 frente a la A-66.
+DIFERENCIA_TIPO_VIA = 0.15
+
+
+def _caminos(origen: str, destino: str) -> list:
+    """Enumera itinerarios contando solo kilometros, sin tocar los tramos.
+
+    Primero barato y luego caro: recorrer el grafo cuesta microsegundos y filtrar
+    aqui los rodeos evita filtrar 7.250 tramos ocho mil veces. Con hasta tres
+    etapas aparece la ruta buena de Madrid a Santander (por Palencia, 502 km) y
+    tambien el disparate por A Coruña (1.086 km); el que los separa es el margen
+    sobre el itinerario mas corto, no el numero de etapas.
+    """
+    hitos, grafo = hitos_por_ciudad(), _vecinas()
+    salidas = []
+
+    def avanzar(actual, visitadas, vias_usadas, etapas, kms):
+        if len(etapas) >= MAX_ETAPAS_RUTA:
+            return
+        for siguiente, vias in grafo.get(actual, {}).items():
+            if siguiente in visitadas:
+                continue
+            for via in vias:
+                if via in vias_usadas:
+                    continue
+                pk0, pk1 = hitos[actual][via], hitos[siguiente][via]
+                if pk0 == pk1:
+                    continue
+                paso = etapas + [(via, pk0, pk1)]
+                total = kms + abs(pk1 - pk0)
+                if siguiente == destino:
+                    salidas.append({"etapas": paso, "km": total,
+                                    "pasos": visitadas[1:] + [siguiente]})
+                else:
+                    avanzar(siguiente, visitadas + [siguiente],
+                            vias_usadas | {via}, paso, total)
+
+    avanzar(origen, [origen], set(), [], 0.0)
+    return salidas
+
+
+def itinerarios_entre(origen: str, destino: str, margen: float = 1.30) -> list:
+    """Las formas razonables de ir de una ciudad a otra encadenando corredores.
+
+    Razonable quiere decir que no se aleje mas de `margen` del itinerario mas
+    corto: con eso se caen los rodeos sin tener que prohibir el numero de etapas,
+    que era lo que dejaba fuera la ruta buena de algunos trayectos.
+    """
+    hitos = hitos_por_ciudad()
+    if origen not in hitos or destino not in hitos or origen == destino:
+        return []
+    caminos = _caminos(origen, destino)
+    if not caminos:
+        return []
+    corto = min(c["km"] for c in caminos)
+    caminos = [c for c in caminos if c["km"] <= corto * margen]
+
+    vistos, candidatos = set(), []
+    for camino in sorted(caminos, key=lambda c: (c["km"], len(c["etapas"]))):
+        clave = frozenset(via for via, _, _ in camino["etapas"])
+        if clave in vistos:
+            continue
+        vistos.add(clave)
+        candidatos.append(camino)
+        if len(candidatos) >= MAX_CANDIDATOS:
+            break
+
+    resueltos = []
+    for camino in candidatos:
+        resumen = evaluar_itinerario(camino["etapas"])
+        if resumen["n_tramos"] < 3 or resumen["indice"] != resumen["indice"]:
+            continue
+        resumen["paso"] = ", ".join(camino["pasos"][:-1]) or None
+        resueltos.append(resumen)
+    return sorted(resueltos, key=lambda r: r["km_declarados"])
+
+
+def resolver_trayecto(origen: str, destino: str, margen: float = 1.30) -> dict:
+    """Lo que necesita una fila del CSV: la mejor ruta, la alternativa si la hay
+    y, si no se puede, por que no. Nunca lanza una excepcion: la fila siempre
+    vuelve con un estado que se pueda enseñar."""
+    ciudad_o, sugerencia_o = buscar_ciudad(origen)
+    ciudad_d, sugerencia_d = buscar_ciudad(destino)
+    for escrito, encontrada, sugerencia in ((origen, ciudad_o, sugerencia_o),
+                                            (destino, ciudad_d, sugerencia_d)):
+        if encontrada is None:
+            pista = f" ¿Querías decir {sugerencia}?" if sugerencia else ""
+            return {"estado": "Ciudad no reconocida", "origen": origen, "destino": destino,
+                    "aviso": f"«{escrito}» no está en la red que cubre Baliza.{pista}"}
+    if ciudad_o == ciudad_d:
+        return {"estado": "Sin ruta", "origen": ciudad_o, "destino": ciudad_d,
+                "aviso": "El origen y el destino son la misma ciudad."}
+
+    opciones = itinerarios_entre(ciudad_o, ciudad_d, margen=margen)
+    if not opciones:
+        return {"estado": "Sin ruta", "origen": ciudad_o, "destino": ciudad_d,
+                "aviso": (f"No hay ruta entre {ciudad_o} y {ciudad_d} dentro de la Red de "
+                          "Carreteras del Estado que cubre Baliza.")}
+
+    # Misma regla que el catalogo: solo se comparan rutas del mismo tipo de via.
+    # Se toma como referencia la que mas autovia lleva, que es la que el conductor
+    # da por defecto, y se descartan las que se alejen demasiado de ella.
+    referencia = max(o["parte_autovia"] for o in opciones)
+    comparables = [o for o in opciones
+                   if referencia - o["parte_autovia"] <= DIFERENCIA_TIPO_VIA]
+    descartadas = len(opciones) - len(comparables)
+    opciones = sorted(comparables, key=lambda o: o["indice"])
+    mejor = opciones[0]
+    if not mejor["fiable"]:
+        estado, aviso = "Cobertura insuficiente", (
+            f"Solo tienen aforo {pct_simple(mejor['cobertura'])} de los kilómetros de esta "
+            "ruta, así que el índice es orientativo y no se declara ganadora.")
+    else:
+        estado, aviso = "Resuelta", ""
+    return {"estado": estado, "origen": ciudad_o, "destino": ciudad_d,
+            "aviso": aviso, "opciones": opciones, "mejor": mejor,
+            "alternativa": opciones[1] if len(opciones) > 1 else None,
+            "descartadas_por_tipo": descartadas}
+
+
+def pct_simple(fraccion) -> str:
+    """Porcentaje sin depender de baliza.estilo, que es capa de presentacion."""
+    return f"{fraccion * 100:.0f} %".replace(".", ",")
 
 
 # Universo con el que se compara un escenario de gravedad. El test completo es en

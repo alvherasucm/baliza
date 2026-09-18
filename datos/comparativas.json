@@ -1,0 +1,95 @@
+{
+  "_leeme": "Trayectos con dos formas de ir. Solo entran pares cuyas dos rutas son del mismo tipo de vía (aquí, autovía o autopista en el 100 % de sus kilómetros medidos) y con al menos el 95 % de los kilómetros aforados. La razón está en el propio indicador: el índice de ruta mide la probabilidad de que un tramo registre algún accidente al año con todo su tráfico, así que comparar una autovía con una nacional vacía daría la vuelta al resultado. Cada etapa es [carretera, PK de salida, PK de llegada] y los PK salen de los hitos de datos/corredores.json y datos/corredores_extra.json. pruebas/pruebas_integracion.py vuelve a comprobar cobertura, tipo de vía y solape en cada ejecución.",
+  "trayectos": [
+    {
+      "id": "madrid-sevilla",
+      "origen": "Madrid",
+      "destino": "Sevilla",
+      "descripcion": "Las dos formas clásicas de bajar a Andalucía desde Madrid. Ninguna comparte un solo kilómetro con la otra.",
+      "rutas": [
+        {
+          "nombre": "Por Extremadura",
+          "detalle": "A-5 hasta Mérida y A-66 hasta Sevilla",
+          "etapas": [["A-5", 10.0, 341.0], ["A-66", 630.0, 809.0]]
+        },
+        {
+          "nombre": "Por Córdoba",
+          "detalle": "A-4 directa",
+          "etapas": [["A-4", 4.0, 535.0]]
+        }
+      ]
+    },
+    {
+      "id": "sevilla-burgos",
+      "origen": "Sevilla",
+      "destino": "Burgos",
+      "descripcion": "Subir por la Ruta de la Plata o subir por Madrid. Son 53 km más por el oeste y ninguna provincia en común salvo las puntas.",
+      "rutas": [
+        {
+          "nombre": "Por la Ruta de la Plata",
+          "detalle": "A-66 hasta Salamanca y A-62 hasta Burgos",
+          "etapas": [["A-66", 809.0, 340.0], ["A-62", 240.0, 8.0]]
+        },
+        {
+          "nombre": "Por Madrid",
+          "detalle": "A-4 hasta Madrid y A-1 hasta Burgos",
+          "etapas": [["A-4", 535.0, 4.0], ["A-1", 12.0, 235.0]]
+        }
+      ]
+    },
+    {
+      "id": "burgos-merida",
+      "origen": "Burgos",
+      "destino": "Mérida",
+      "descripcion": "El mismo dilema, más corto: bajar por el oeste o cruzar por el centro.",
+      "rutas": [
+        {
+          "nombre": "Por Salamanca",
+          "detalle": "A-62 hasta Salamanca y A-66 hasta Mérida",
+          "etapas": [["A-62", 8.0, 240.0], ["A-66", 340.0, 630.0]]
+        },
+        {
+          "nombre": "Por Madrid",
+          "detalle": "A-1 hasta Madrid y A-5 hasta Mérida",
+          "etapas": [["A-1", 235.0, 12.0], ["A-5", 10.0, 341.0]]
+        }
+      ]
+    },
+    {
+      "id": "valencia-sevilla",
+      "origen": "Valencia",
+      "destino": "Sevilla",
+      "descripcion": "Las dos rutas coinciden hasta Madrid: la decisión se toma allí, y a partir de ahí no vuelven a encontrarse.",
+      "rutas": [
+        {
+          "nombre": "Por Extremadura",
+          "detalle": "A-3 hasta Madrid, A-5 hasta Mérida y A-66 hasta Sevilla",
+          "etapas": [["A-3", 352.0, 4.0], ["A-5", 10.0, 341.0], ["A-66", 630.0, 809.0]]
+        },
+        {
+          "nombre": "Por Córdoba",
+          "detalle": "A-3 hasta Madrid y A-4 hasta Sevilla",
+          "etapas": [["A-3", 352.0, 4.0], ["A-4", 4.0, 535.0]]
+        }
+      ]
+    },
+    {
+      "id": "zaragoza-sevilla",
+      "origen": "Zaragoza",
+      "destino": "Sevilla",
+      "descripcion": "Igual que la anterior: se comparte la bajada hasta Madrid y se elige allí.",
+      "rutas": [
+        {
+          "nombre": "Por Extremadura",
+          "detalle": "A-2 hasta Madrid, A-5 hasta Mérida y A-66 hasta Sevilla",
+          "etapas": [["A-2", 313.0, 6.0], ["A-5", 10.0, 341.0], ["A-66", 630.0, 809.0]]
+        },
+        {
+          "nombre": "Por Córdoba",
+          "detalle": "A-2 hasta Madrid y A-4 hasta Sevilla",
+          "etapas": [["A-2", 313.0, 6.0], ["A-4", 4.0, 535.0]]
+        }
+      ]
+    }
+  ]
+}
