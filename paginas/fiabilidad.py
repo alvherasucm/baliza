@@ -12,8 +12,8 @@ metricas = datos.metricas_gravedad()
 carretera = datos.metricas_gravedad(datos.UNIVERSO_GRAVEDAD)
 provincias = datos.metricas_provincias()
 ingenua, jerarquico = provincias.loc["pred_naive"], provincias.loc["pred_jerarquico"]
-error_provincia = (f"Error medio de {estilo.num(jerarquico.mae, 1)} frente a "
-                   f"{estilo.num(ingenua.mae, 1)} (un {estilo.pct(jerarquico.mejora_mae)} menos)")
+error_provincia = (f"Reduce el error un {estilo.pct(jerarquico.mejora_mae, 1)} frente a "
+                   "repetir el dato del año anterior")
 
 referencias = datos.referencias_tramos()
 por_tipo = referencias["por_tipo_via"]
@@ -44,17 +44,18 @@ ui.cabecera_pagina(
 )
 
 ui.rejilla([
-    ui.tarjeta_cifra("Provincia · error medio", estilo.num(jerarquico.mae, 1),
-                     unidad="accidentes",
-                     pie=f"frente a {estilo.num(ingenua.mae, 1)} de repetir el año anterior",
-                     delta=f"−{estilo.pct(jerarquico.mejora_mae)}", tono="bueno"),
+    ui.tarjeta_cifra(
+        "Provincia · reducción del error", estilo.pct(jerarquico.mejora_mae, 1),
+        ayuda="Reducción del error absoluto medio frente a usar como previsión el número de "
+              "accidentes del año anterior.",
+        pie="frente a repetir el dato del año anterior"),
     ui.tarjeta_cifra(
         "Tramo · capacidad de priorización", estilo.pct(auc_modelo, 1),
         ayuda="Si se compara un tramo que registró al menos un accidente en 2024 con otro "
               "que no registró ninguno, el modelo asigna mayor riesgo al primero en el "
               f"{estilo.pct(auc_modelo, 1)} de las comparaciones. No es un porcentaje de "
               "predicciones acertadas.",
-        pie=f"frente al {estilo.pct(auc_trafico, 1)} de ordenar solo por tráfico",
+        pie=f"vs. el {estilo.pct(auc_trafico, 1)} de ordenar solo por tráfico",
         delta=ventaja_priorizacion(auc_modelo - auc_trafico), tono="bueno"),
     ui.tarjeta_cifra("Gravedad · graves detectados", estilo.pct(metricas["recall"]),
                      pie=f"{estilo.pct(metricas['precision'])} de los avisos aciertan"),
@@ -82,8 +83,8 @@ ui.tabla(pd.DataFrame([
      "Resultado": error_provincia},
     {"Modelo": "Tramo", "Pregunta": "Si un tramo tendrá algún accidente este año",
      "Referencia": "Ordenar por tráfico o por los accidentes del año anterior",
-     "Resultado": f"ROC-AUC {auc(auc_modelo)} frente a {auc(auc_trafico)} del tráfico "
-                  f"y {auc(auc_historico)} del año anterior"},
+     "Resultado": f"Capacidad de priorización {estilo.pct(auc_modelo, 1)} vs. al {estilo.pct(auc_trafico, 1)} del tráfico "
+                  f"y {estilo.pct(auc_historico, 1)} del año anterior"},
     {"Modelo": "Gravedad", "Pregunta": "Si un accidente será grave o mortal",
      "Referencia": "Avisar siempre o no avisar nunca",
      "Resultado": f"Detecta el {estilo.pct(metricas['recall'])} de los graves; "

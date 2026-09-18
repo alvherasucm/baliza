@@ -129,7 +129,7 @@ ui.conclusiones([
      "y la región de cada provincia. Así el error medio baja a "
      f"{estilo.num(modelo.mae, 1)} accidentes."),
     (f"Cuánto mejora: un {estilo.pct(modelo.mejora_mae)}",
-     "Donde más se nota es en los fallos grandes. El RMSE, la medida que más los castiga, baja "
+     "Donde más se nota es en los fallos grandes. "
      f"un {estilo.pct(modelo.mejora_rmse)}."),
 ])
 

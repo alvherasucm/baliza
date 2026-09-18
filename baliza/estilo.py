@@ -9,6 +9,7 @@ LOGO = RAIZ / "static" / "marca" / "baliza_logo.svg"
 ICONO = RAIZ / "static" / "marca" / "baliza_icono.svg"
 # Servida por Streamlit desde static/ (enableStaticServing en config.toml)
 PORTADA_URL = "app/static/imagenes/accidente.jpg"
+MAPA_CONCENTRACION = RAIZ / "static" / "mapa_concentracion_2024.png"
 
 MARCA = "Baliza"
 TAGLINE = "Sabes por dónde vas antes de salir"
@@ -66,7 +67,7 @@ PAGINAS = [
     ("fiabilidad", "Fiabilidad", "paginas/fiabilidad.py", ":material/verified:", "Confianza"),
     ("como", "Cómo funciona", "paginas/como_funciona.py", ":material/account_tree:",
      "Confianza"),
-    ("comparar", "Comparar rutas", "paginas/comparar.py", ":material/alt_route:", "Explorar"),
+    ("flotas", "Flotas", "paginas/flotas.py", ":material/local_shipping:", "Empresas"),
 ]
 
 

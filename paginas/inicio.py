@@ -7,11 +7,6 @@ from baliza import componentes as ui
 from baliza import datos, estilo
 
 tramos = datos.tramos_puntuados()
-con_recuento = tramos.dropna(subset=["N_ACC"])
-
-orden = con_recuento.sort_values("N_ACC", ascending=False)
-corte = max(1, int(len(orden) * 0.10))
-concentracion = orden.head(corte).N_ACC.sum() / orden.N_ACC.sum()
 
 ui.cabecera_pagina(
     "Riesgo vial",
@@ -23,20 +18,19 @@ ui.cabecera_pagina(
           ("Cobertura", f"{tramos.provincia.nunique()} provincias peninsulares")],
 )
 
-ui.rejilla([
-    ui.tarjeta_cifra("Accidentes de España", "11 %",
-                     pie="ocurren en la red que medimos (2016-2024)"),
-    ui.tarjeta_cifra("Fallecidos de España", "24 %",
-                     pie="mueren en esa misma red (fallecidos a 30 días)"),
-    ui.tarjeta_cifra("Letalidad frente a la media", "2,2", unidad="veces",
-                     pie="y 5,4 veces la de un accidente urbano"),
-    ui.tarjeta_cifra("Accidentes en solo el 10 % de los tramos", estilo.pct(concentracion),
-                     pie=f"los {estilo.num(corte)} tramos con más accidentes, de los "
-                         f"{estilo.num(len(con_recuento))} con recuento en {datos.ANIO}"),
-], plantilla="repeat(4, minmax(0, 1fr))")
-
 ui.imagen_portada(estilo.PORTADA_URL,
                  "Dos coches dañados tras un choque, junto a un cono de tráfico")
+
+st.write("")
+mensaje, mapa = st.columns([1, 1.55], gap="large", vertical_alignment="center")
+with mensaje:
+    st.markdown("## En el 10% de los tramos analizados, ocurren 6 de cada 10 accidentes")
+with mapa:
+    st.image(
+        estilo.MAPA_CONCENTRACION,
+        caption=None,
+        use_container_width=True,
+    )
 
 ui.cabecera_seccion("Qué puedes hacer con Baliza",
                     "Empieza por tu ruta. Desde ahí puedes bajar al detalle de un tramo, subir a "
@@ -44,11 +38,11 @@ ui.cabecera_seccion("Qué puedes hacer con Baliza",
 
 MODULOS = [
     ("ruta", "Cuánto riesgo acumula un trayecto y dónde se concentra."),
-    ("comparar", "Dos formas de hacer el mismo viaje: cuál acumula menos riesgo."),
     ("mapa", "Ranking de tramos, con varios criterios para ordenarlos."),
     ("mapa_provincial", "El riesgo de cada provincia en un mapa, con la Red del Estado = 100."),
     ("provincia", "Una provincia frente a la media del país, año a año."),
     ("noche", "Cuánto cambia la gravedad según cuándo y cómo sales."),
+    ("flotas", "Puntúa las rutas habituales de una flota."),
     ("fiabilidad", "Cuánto acierta cada modelo y qué no puede hacer."),
     ("como", "Cómo se pasa de los datos de la DGT a la nota de cada tramo."),
 ]
