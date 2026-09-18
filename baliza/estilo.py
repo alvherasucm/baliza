@@ -10,8 +10,10 @@ ICONO = RAIZ / "static" / "marca" / "baliza_icono.svg"
 # Servida por Streamlit desde static/ (enableStaticServing en config.toml)
 PORTADA_URL = "app/static/imagenes/accidente.jpg"
 # Version sin fondo, recoloreada a la paleta de la app. El PNG original sobre
-# blanco se conserva al lado, en mapa_concentracion_2024.png.
-MAPA_CONCENTRACION = RAIZ / "static" / "mapa_concentracion.png"
+# blanco se conserva al lado, en static/mapa_concentracion_2024.png. Se sirve por
+# URL, como la portada: st.image mide mal el hueco dentro de un contenedor con
+# clave y deja la imagen en 15 px.
+MAPA_CONCENTRACION = "app/static/mapa_concentracion.png"
 
 MARCA = "Baliza"
 TAGLINE = "Sabes por dónde vas antes de salir"

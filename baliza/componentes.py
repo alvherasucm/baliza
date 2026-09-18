@@ -58,6 +58,17 @@ def imagen_portada(url: str, texto_alternativo: str) -> None:
     _pintar(f'<img class="bz-portada" src="{_e(url)}" alt="{_e(texto_alternativo)}">')
 
 
+def imagen(url: str, texto_alternativo: str) -> None:
+    """Imagen que ocupa el ancho disponible y conserva su proporcion.
+
+    Se sirve por HTML y no con st.image porque este ultimo mide el hueco con un
+    observador de tamano y, dentro de un contenedor con clave, a veces mide antes
+    de que el layout se asiente y deja la imagen en 15 px. La foto de portada
+    lleva siempre esta via y nunca ha fallado."""
+    _pintar(f'<img src="{_e(url)}" alt="{_e(texto_alternativo)}" '
+            'style="display:block;width:100%;height:auto">')
+
+
 def filtros(clave: str = "filtros"):
     """FilterBar: un unico bloque para todos los controles de exploracion."""
     return st.container(key=clave)
@@ -101,17 +112,22 @@ def tarjeta_cifra(titulo: str, valor: str, unidad: str | None = None, pie: str |
             f'<div class="bz-kpi">{_e(valor)}{unidad_html}</div>{extra}{pie_html}</div>')
 
 
-def tarjeta_destacada(eyebrow: str, titulo: str, subtitulo: str,
-                      cifras: list[tuple[str, str]], banda=None, clase: str = "") -> str:
-    """Tarjeta para el elemento principal de una vista: un tramo, una provincia."""
+def tarjeta_destacada(eyebrow: str, titulo: str, subtitulo: str = "",
+                      cifras: list[tuple[str, str]] | None = None, banda=None,
+                      clase: str = "") -> str:
+    """Tarjeta para el elemento principal de una vista: un tramo, una provincia.
+
+    El subtitulo y las cifras son opcionales: sin ellos la tarjeta se queda en
+    antetitulo y titular, sin huecos vacios debajo."""
     stats = "".join(f'<div class="bz-stat"><b>{_e(v)}</b><span>{_e(k)}</span></div>'
-                    for v, k in cifras)
+                    for v, k in (cifras or []))
+    sub = f'<div class="bz-feature-sub">{_e(subtitulo)}</div>' if subtitulo else ""
+    pie = f'<div class="bz-stats">{stats}</div>' if stats else ""
     badge = etiqueta_riesgo(banda) if banda is not None else ""
     return (f'<div class="bz-card bz-feature {clase}"><div class="bz-feature-main"><div>'
             f'<div class="bz-eyebrow">{_e(eyebrow)}</div>'
             f'<div class="bz-feature-title">{_e(titulo)}</div>'
-            f'<div class="bz-feature-sub">{_e(subtitulo)}</div></div>{badge}</div>'
-            f'<div class="bz-stats">{stats}</div></div>')
+            f'{sub}</div>{badge}</div>{pie}</div>')
 
 
 def cifras_compactas(cifras: list[tuple[str, str]]) -> str:

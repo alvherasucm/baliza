@@ -39,17 +39,12 @@ with tesis:
         "La concentración",
         f"{concentracion * 10:.0f} de cada 10 accidentes ocurren en el "
         f"{estilo.pct(0.10)} de los tramos",
-        "Un problema repartido por toda la red no se puede atacar. Uno concentrado, sí: "
-        "cabe en un presupuesto que ya existe.",
-        [(estilo.num(corte), "tramos concentran esa parte"),
-         (estilo.num(len(con_recuento)), f"tramos con recuento en {datos.ANIO}"),
-         (estilo.pct(concentracion), "de los accidentes de la red")],
     )], plantilla="1fr")
 with mapa:
     with ui.contenedor_grafico("mapa_concentracion"):
-        # width="stretch", no use_container_width: en Streamlit 1.50 el parametro
-        # viejo se ignora y la imagen sale de 15 px
-        st.image(str(estilo.MAPA_CONCENTRACION), width="stretch")
+        ui.imagen(estilo.MAPA_CONCENTRACION,
+                  "Mapa de la Red de Carreteras del Estado con el 10 % de tramos de mayor "
+                  "siniestralidad resaltados en rojo")
         st.caption(
             f"Red de Carreteras del Estado en {datos.ANIO}. En rojo, el "
             f"{estilo.pct(0.10)} de tramos con más accidentes; en gris, el resto de la red "
