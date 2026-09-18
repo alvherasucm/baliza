@@ -28,6 +28,21 @@ COBERTURA_MINIMA_RUTA = 0.90
 # Diferencia de indice por debajo de la cual dos rutas se consideran iguales
 EMPATE_INDICE = 8.0
 
+# Un solo formato para todo lo que la app escribe y lee: coma de separador y punto
+# decimal, que es el CSV estandar. Lo que se lee es mucho mas tolerante que lo que
+# se escribe, porque el usuario pasa el fichero por Excel y vuelve con lo que sea.
+SEPARADOR_CSV = ","
+DECIMAL_CSV = "."
+SEPARADORES_ACEPTADOS = (",", ";", "\t", "|")
+# Nombres que se admiten para cada columna del formato por ciudades
+ALIAS_COLUMNAS = {
+    "origen": ("origen", "desde", "salida", "ciudad_origen", "from"),
+    "destino": ("destino", "hasta", "llegada", "ciudad_destino", "to"),
+    "paso": ("paso", "via", "por", "pasando_por", "intermedia", "escala"),
+    "viajes_semana": ("viajes_semana", "viajes", "frecuencia", "viajes/semana",
+                      "viajes_por_semana"),
+}
+
 # Modelo de provincias de Miki: coeficientes en JSON y la funcion en
 # baliza/predecir_provincia.py, los dos sin modificar.
 COEFICIENTES_PROVINCIAS = MODELOS / "coeficientes_provincias.json"
@@ -429,7 +444,23 @@ def _caminos(origen: str, destino: str) -> list:
     return salidas
 
 
-def itinerarios_entre(origen: str, destino: str, margen: float = 1.30) -> list:
+def _pasa_por(camino: dict, ciudad: str) -> bool:
+    """Si el itinerario atraviesa esa ciudad.
+
+    No basta con mirar los enlaces: por la A-4 de Madrid a Sevilla se pasa por
+    Córdoba sin cambiar de carretera, asi que Cordoba no figura como paso. Lo que
+    vale es si su punto kilometrico cae dentro de algun tramo recorrido."""
+    hitos = hitos_por_ciudad().get(ciudad, {})
+    if ciudad in camino["pasos"]:
+        return True
+    for via, pk0, pk1 in camino["etapas"]:
+        if via in hitos and min(pk0, pk1) <= hitos[via] <= max(pk0, pk1):
+            return True
+    return False
+
+
+def itinerarios_entre(origen: str, destino: str, margen: float = 1.30,
+                      paso: str | None = None) -> list:
     """Las formas razonables de ir de una ciudad a otra encadenando corredores.
 
     Razonable quiere decir que no se aleje mas de `margen` del itinerario mas
@@ -440,6 +471,8 @@ def itinerarios_entre(origen: str, destino: str, margen: float = 1.30) -> list:
     if origen not in hitos or destino not in hitos or origen == destino:
         return []
     caminos = _caminos(origen, destino)
+    if paso and paso not in (origen, destino):
+        caminos = [c for c in caminos if _pasa_por(c, paso)]
     if not caminos:
         return []
     corto = min(c["km"] for c in caminos)
@@ -465,10 +498,14 @@ def itinerarios_entre(origen: str, destino: str, margen: float = 1.30) -> list:
     return sorted(resueltos, key=lambda r: r["km_declarados"])
 
 
-def resolver_trayecto(origen: str, destino: str, margen: float = 1.30) -> dict:
+def resolver_trayecto(origen: str, destino: str, paso=None, margen: float = 1.30) -> dict:
     """Lo que necesita una fila del CSV: la mejor ruta, la alternativa si la hay
     y, si no se puede, por que no. Nunca lanza una excepcion: la fila siempre
-    vuelve con un estado que se pueda enseñar."""
+    vuelve con un estado que se pueda enseñar.
+
+    `paso` es opcional y obliga a que la ruta atraviese esa ciudad, para cuando el
+    usuario quiere comparar solo las formas de ir de Madrid a Sevilla por Cordoba.
+    """
     ciudad_o, sugerencia_o = buscar_ciudad(origen)
     ciudad_d, sugerencia_d = buscar_ciudad(destino)
     for escrito, encontrada, sugerencia in ((origen, ciudad_o, sugerencia_o),
@@ -481,11 +518,22 @@ def resolver_trayecto(origen: str, destino: str, margen: float = 1.30) -> dict:
         return {"estado": "Sin ruta", "origen": ciudad_o, "destino": ciudad_d,
                 "aviso": "El origen y el destino son la misma ciudad."}
 
-    opciones = itinerarios_entre(ciudad_o, ciudad_d, margen=margen)
+    ciudad_paso = None
+    if paso is not None and str(paso).strip() and str(paso).strip().lower() != "nan":
+        ciudad_paso, sugerencia_p = buscar_ciudad(paso)
+        if ciudad_paso is None:
+            pista = f" ¿Querías decir {sugerencia_p}?" if sugerencia_p else ""
+            return {"estado": "Ciudad no reconocida", "origen": ciudad_o,
+                    "destino": ciudad_d,
+                    "aviso": f"El paso «{paso}» no está en la red que cubre Baliza.{pista}"}
+
+    opciones = itinerarios_entre(ciudad_o, ciudad_d, margen=margen, paso=ciudad_paso)
     if not opciones:
+        por = f" pasando por {ciudad_paso}" if ciudad_paso else ""
         return {"estado": "Sin ruta", "origen": ciudad_o, "destino": ciudad_d,
-                "aviso": (f"No hay ruta entre {ciudad_o} y {ciudad_d} dentro de la Red de "
-                          "Carreteras del Estado que cubre Baliza.")}
+                "paso": ciudad_paso,
+                "aviso": (f"No hay ruta entre {ciudad_o} y {ciudad_d}{por} dentro de la Red "
+                          "de Carreteras del Estado que cubre Baliza.")}
 
     # Misma regla que el catalogo: solo se comparan rutas del mismo tipo de via.
     # Se toma como referencia la que mas autovia lleva, que es la que el conductor
@@ -503,7 +551,7 @@ def resolver_trayecto(origen: str, destino: str, margen: float = 1.30) -> dict:
     else:
         estado, aviso = "Resuelta", ""
     return {"estado": estado, "origen": ciudad_o, "destino": ciudad_d,
-            "aviso": aviso, "opciones": opciones, "mejor": mejor,
+            "paso": ciudad_paso, "aviso": aviso, "opciones": opciones, "mejor": mejor,
             "alternativa": opciones[1] if len(opciones) > 1 else None,
             "descartadas_por_tipo": descartadas}
 
@@ -511,6 +559,105 @@ def resolver_trayecto(origen: str, destino: str, margen: float = 1.30) -> dict:
 def pct_simple(fraccion) -> str:
     """Porcentaje sin depender de baliza.estilo, que es capa de presentacion."""
     return f"{fraccion * 100:.0f} %".replace(".", ",")
+
+
+# ------------------------------------------------------------- lectura de CSV
+
+def texto_csv(tabla: pd.DataFrame) -> bytes:
+    """Todo lo que la app descarga sale por aqui: coma, punto decimal y BOM.
+
+    El BOM es lo que hace que Excel abra los acentos bien. Al volver a subir el
+    fichero hay que quitarlo, y eso es justo lo que se olvidaba antes: el nombre
+    de la primera columna llegaba como '\\ufefforigen' y la pantalla no reconocia
+    el formato ni con la plantilla intacta."""
+    return tabla.to_csv(sep=SEPARADOR_CSV, decimal=DECIMAL_CSV,
+                        index=False).encode("utf-8-sig")
+
+
+def _a_numero(serie: pd.Series) -> pd.Series:
+    """Numeros vengan como vengan: 1234.5, 1234,5 o 1.234,5.
+
+    Excel en español reescribe los decimales con coma en cuanto el usuario toca
+    una celda y guarda. Si eso no se deshace, la columna entra como texto y el
+    modelo revienta con un error que no dice nada."""
+    texto = serie.astype(str).str.strip().str.replace(" ", "", regex=False)
+    con_coma = texto.str.contains(",", regex=False)
+    texto = texto.where(~con_coma,
+                        texto.str.replace(".", "", regex=False)
+                             .str.replace(",", ".", regex=False))
+    return pd.to_numeric(texto.replace({"": None, "nan": None, "None": None}),
+                         errors="coerce")
+
+
+def _separador(cabecera: str) -> str:
+    """El que mas veces aparece en la primera linea. Mas fiable que el olfateador
+    de pandas, que se atraganta con una sola columna o con comas dentro del texto."""
+    cuentas = {sep: cabecera.count(sep) for sep in SEPARADORES_ACEPTADOS}
+    mejor = max(cuentas, key=cuentas.get)
+    return mejor if cuentas[mejor] else SEPARADOR_CSV
+
+
+def leer_tabla_csv(archivo) -> tuple:
+    """Lee el CSV que sube el usuario y lo deja utilizable. Devuelve (tabla, error).
+
+    Tolera: BOM, coma o punto y coma o tabulador, acentos en utf-8 o en Windows-1252,
+    mayusculas y espacios en los encabezados, columnas en otro orden, columnas de
+    mas, filas vacias y decimales con coma. Nunca lanza una excepcion.
+    """
+    crudo = archivo.read() if hasattr(archivo, "read") else archivo
+    if isinstance(crudo, str):
+        crudo = crudo.encode("utf-8")
+    for codificacion in ("utf-8-sig", "utf-8", "cp1252", "latin-1"):
+        try:
+            texto = crudo.decode(codificacion)
+            break
+        except UnicodeDecodeError:
+            continue
+    else:
+        return None, "No se ha podido leer el archivo: guárdalo como CSV en UTF-8."
+
+    texto = texto.lstrip("﻿").replace("\r\n", "\n").replace("\r", "\n")
+    lineas = [l for l in texto.split("\n") if l.strip()]
+    if len(lineas) < 2:
+        return None, "El archivo no tiene filas debajo de los encabezados."
+
+    import csv as _csv
+    import io
+    try:
+        tabla = pd.read_csv(io.StringIO("\n".join(lineas)),
+                            sep=_separador(lineas[0]), dtype=str,
+                            skipinitialspace=True, quoting=_csv.QUOTE_MINIMAL)
+    except Exception:
+        return None, ("No se ha podido interpretar el archivo. Descarga una plantilla y "
+                      "conserva sus encabezados.")
+
+    tabla.columns = [str(c).lstrip("﻿").strip().lower().replace(" ", "_")
+                     for c in tabla.columns]
+    tabla = tabla.loc[:, [c for c in tabla.columns if c and not c.startswith("unnamed")]]
+    renombres = {}
+    for canonico, alias in ALIAS_COLUMNAS.items():
+        for columna in tabla.columns:
+            if columna in alias and columna != canonico:
+                renombres[columna] = canonico
+    tabla = tabla.rename(columns=renombres)
+    tabla = tabla.dropna(how="all")
+    tabla = tabla[~tabla.apply(lambda f: f.astype(str).str.strip().eq("").all(), axis=1)]
+    if tabla.empty:
+        return None, "El archivo no tiene ninguna fila con datos."
+    return tabla.reset_index(drop=True), None
+
+
+COLUMNAS_NUMERICAS = ("pk_inicio", "pk_fin", "imd_total", "imd_pesados", "viajes_semana",
+                      "pk_inicio_km", "pk_fin_km", "proporcion_pesados")
+
+
+def numerizar(tabla: pd.DataFrame) -> pd.DataFrame:
+    """Pasa a numero las columnas que el modelo o la pantalla necesitan como tal."""
+    tabla = tabla.copy()
+    for columna in COLUMNAS_NUMERICAS:
+        if columna in tabla.columns:
+            tabla[columna] = _a_numero(tabla[columna])
+    return tabla
 
 
 # Universo con el que se compara un escenario de gravedad. El test completo es en

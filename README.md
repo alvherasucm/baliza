@@ -174,10 +174,23 @@ usan las dos pantallas.
 - **Por debajo de `COBERTURA_MINIMA_RUTA`** (90 % de kilómetros con aforo) el índice se
   enseña, pero la ruta no se declara ganadora. Por debajo de `EMPATE_INDICE` (8 puntos) las
   dos rutas se dan por equivalentes, igual que en «Salir de noche».
-- **El CSV acepta dos formatos.** `origen;destino;viajes_semana` resuelve el trayecto sobre los
-  corredores y ordena por índice, o por índice × viajes. El formato de tramos es el de la
-  antigua hoja de Flotas y **ejecuta el modelo sobre los datos del usuario**, con la validación
-  de Jose intacta: es la pieza de productivización y no se ha perdido.
+- **El CSV acepta dos formatos.** `origen, destino, paso, viajes_semana` resuelve el trayecto
+  sobre los corredores y ordena por índice, o por índice × viajes; `paso` es opcional y obliga
+  a que la ruta atraviese esa ciudad. El formato de tramos es el de la antigua hoja de Flotas y
+  **ejecuta el modelo sobre los datos del usuario**, con la validación de Jose intacta: es la
+  pieza de productivización y no se ha perdido.
+- **Un solo formato de fichero.** Todo lo que la página descarga sale con coma de separador,
+  punto decimal y BOM, que es lo que hace que Excel abra bien los acentos. `datos.texto_csv()`
+  es el único sitio donde se escribe y `datos.leer_tabla_csv()` el único donde se lee. El
+  lector quita el BOM (no hacerlo era lo que rompía la plantilla intacta: la primera columna
+  llegaba como `\ufefforigen`), detecta coma, punto y coma o tabulador, admite UTF-8 y
+  Windows-1252, normaliza los encabezados, acepta alias (`desde`, `hasta`, `por`,
+  `frecuencia`), tolera columnas de más y en otro orden, y `datos.numerizar()` convierte los
+  decimales con coma que devuelve Excel en español. `pruebas_integracion.py` comprueba el
+  viaje de ida y vuelta de las dos plantillas.
+- **El paso obligado se comprueba de verdad**, no por los enlaces: la A-4 atraviesa Córdoba sin
+  cambiar de carretera, así que se mira si el PK de la ciudad cae dentro de algún tramo
+  recorrido.
 - **Límite conocido.** La ruta que sale de un origen y un destino es la mejor que se puede
   armar con las carreteras medidas. Cuando el enlace real entre dos ciudades no está en la red
   aforada (Zaragoza–Valencia, por ejemplo), el itinerario sale más largo que el de un

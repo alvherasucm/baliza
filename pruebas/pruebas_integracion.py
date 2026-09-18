@@ -433,6 +433,59 @@ comprobar("y coincide con lo que dice el catálogo para ese mismo trayecto",
               - min(capa_datos.evaluar_itinerario([tuple(e) for e in r["etapas"]])["indice"]
                     for r in catalogo[0]["rutas"])) < 1e-9)
 
+# El fallo que vio Alvaro: la plantilla se descargaba con BOM y al volver a subirla
+# la primera columna llegaba como '﻿origen', asi que ni la plantilla intacta se
+# reconocia. Se prueba el viaje de ida y vuelta entero, no solo la lectura.
+import io  # noqa: E402
+
+PLANTILLAS = {
+    "ciudades": pd.DataFrame([{"origen": "Madrid", "destino": "Sevilla", "paso": "",
+                               "viajes_semana": 10}]),
+    "tramos": pd.DataFrame([{"provincia": "Madrid", "carretera": "A-4", "pk_inicio": 4.0,
+                             "pk_fin": 10.0, "imd_total": 65000.0, "imd_pesados": 6500.0,
+                             "tipo_via": "Autopista_autovia", "viajes_semana": 10}]),
+}
+for nombre, plantilla in PLANTILLAS.items():
+    vuelta, fallo = capa_datos.leer_tabla_csv(io.BytesIO(capa_datos.texto_csv(plantilla)))
+    comprobar(f"la plantilla de {nombre} se vuelve a leer tal cual se descarga",
+              fallo is None and list(vuelta.columns) == list(plantilla.columns),
+              fallo or ", ".join(vuelta.columns))
+
+# Lo que devuelve Excel en español: punto y coma, decimales con coma y BOM
+excel = PLANTILLAS["tramos"].to_csv(sep=";", decimal=",", index=False).encode("utf-8-sig")
+vuelta, fallo = capa_datos.leer_tabla_csv(io.BytesIO(excel))
+vuelta = capa_datos.numerizar(vuelta) if vuelta is not None else None
+comprobar("un CSV guardado por Excel en español entra sin tocarlo",
+          fallo is None and float(vuelta.pk_fin.iloc[0]) == 10.0
+          and float(vuelta.imd_total.iloc[0]) == 65000.0,
+          fallo or f"pk_fin={vuelta.pk_fin.iloc[0]}, imd={vuelta.imd_total.iloc[0]}")
+_, prediccion_csv, error_csv = capa_datos.predecir_tramos_usuario(vuelta)
+comprobar("y el modelo lo puntúa sin romperse", error_csv is None and prediccion_csv is not None,
+          error_csv or f"{len(prediccion_csv)} filas")
+
+raros = [(b"ORIGEN,DESTINO\nMadrid,Sevilla\n", "encabezados en mayúsculas"),
+         (b"Desde, Hasta , Por\nMadrid,Sevilla,Cordoba\n", "alias y espacios"),
+         (b"viajes_semana,notas,destino,origen\n7,x,Sevilla,Madrid\n", "columnas reordenadas"),
+         (b"origen\tdestino\nMadrid\tSevilla\n", "separado por tabuladores")]
+malos = [texto for crudo, texto in raros
+         if (lambda t: t[1] is not None or not {"origen", "destino"} <= set(t[0].columns))(
+             capa_datos.leer_tabla_csv(io.BytesIO(crudo)))]
+comprobar("el lector aguanta los CSV que devuelve un usuario real", not malos,
+          "; ".join(malos) or f"{len(raros)} variantes")
+_, vacio = capa_datos.leer_tabla_csv(io.BytesIO(b"origen,destino\n"))
+comprobar("un archivo sin filas se explica en vez de reventar", bool(vacio), vacio)
+
+por_cordoba = capa_datos.resolver_trayecto("Madrid", "Sevilla", paso="Córdoba")
+comprobar("el paso obligado deja solo las rutas que atraviesan esa ciudad",
+          por_cordoba["estado"] == "Resuelta" and por_cordoba["mejor"]["vias"] == ["A-4"],
+          " + ".join(por_cordoba["mejor"]["vias"]))
+comprobar("y funciona aunque se escriba sin acentos",
+          capa_datos.resolver_trayecto("Madrid", "Sevilla", paso="cordoba")["mejor"]["vias"]
+          == ["A-4"])
+imposible = capa_datos.resolver_trayecto("Madrid", "Sevilla", paso="Zaragoza")
+comprobar("un paso imposible se explica en vez de devolver un rodeo",
+          imposible["estado"] == "Sin ruta", imposible["aviso"])
+
 inventada = capa_datos.resolver_trayecto("Sevila", "Madrid")
 comprobar("una ciudad mal escrita vuelve con sugerencia y sin excepción",
           inventada["estado"] == "Ciudad no reconocida" and "Sevilla" in inventada["aviso"],

@@ -26,7 +26,7 @@ pasos = [
      "ahí, ha aprendido algo más que memorizar los datos."),
     ("Cada tramo recibe una nota",
      "Es la probabilidad de que el tramo tenga al menos un accidente en el año. Con ella se "
-     "construyen la ruta, el ranking de tramos y la página de flotas."),
+     "construyen la ruta, el ranking de tramos y la comparación entre rutas."),
 ]
 ui.conclusiones(pasos, titulo="Cuatro pasos", eyebrow="El proceso", columnas=2)
 

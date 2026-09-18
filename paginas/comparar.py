@@ -23,10 +23,12 @@ from baliza import datos, estilo
 TRAYECTOS = datos.comparativas()
 acierto = datos.referencias_tramos()["modelo_final"]["roc_auc"]
 
+# La columna paso es opcional: obliga a que la ruta atraviese esa ciudad. Se deja
+# vacía en las dos primeras filas justo para que se vea que se puede omitir.
 PLANTILLA_CIUDADES = pd.DataFrame([
-    {"origen": "Madrid", "destino": "Sevilla", "viajes_semana": 10},
-    {"origen": "Burgos", "destino": "Mérida", "viajes_semana": 4},
-    {"origen": "Valencia", "destino": "Sevilla", "viajes_semana": 2},
+    {"origen": "Madrid", "destino": "Sevilla", "paso": "", "viajes_semana": 10},
+    {"origen": "Burgos", "destino": "Mérida", "paso": "", "viajes_semana": 4},
+    {"origen": "Madrid", "destino": "Sevilla", "paso": "Córdoba", "viajes_semana": 2},
 ])
 PLANTILLA_TRAMOS = pd.DataFrame([
     {"provincia": "Madrid", "carretera": "A-4", "pk_inicio": 4.0, "pk_fin": 10.0,
@@ -44,6 +46,12 @@ ORDENES = {
         "El índice multiplicado por las veces que se hace la ruta. Es una regla de Baliza "
         "para priorizar una flota, no una salida del modelo."),
 }
+
+def _puntos(diferencia: float) -> str:
+    """«1 punto», no «1 puntos»."""
+    redondeada = round(diferencia)
+    return f"{redondeada:.0f} punto" + ("" if abs(redondeada) == 1 else "s")
+
 
 ui.cabecera_pagina(
     "Rutas alternativas",
@@ -200,7 +208,7 @@ with izquierda:
         st.switch_page(st.session_state["paginas"]["mapa"])
 with derecha:
     st.download_button(
-        "Descargar la comparación", pd.DataFrame([{
+        "Descargar la comparación", datos.texto_csv(pd.DataFrame([{
             "trayecto": f"{elegido['origen']} - {elegido['destino']}",
             "ruta": r["nombre"], "vias": " + ".join(r["vias"]),
             "km_recorrido": round(r["km_declarados"], 1),
@@ -212,7 +220,7 @@ with derecha:
             "recomendada": "Sí" if (r is mejor and not empate and not sin_fiar) else "No",
             "anio_modelo": datos.ANIO,
             "fecha_calculo": date.today().isoformat(),
-        } for r in rutas]).to_csv(sep=";", decimal=",", index=False).encode("utf-8-sig"),
+        } for r in rutas])),
         f"baliza_{elegido['id']}_{date.today():%Y-%m-%d}.csv", "text/csv",
         icon=":material/download:", on_click="ignore", width="stretch")
 
@@ -246,16 +254,20 @@ with ui.filtros("panel_carga"):
     c1, c2, c3 = st.columns([3, 1.3, 1.3], gap="medium", vertical_alignment="bottom")
     subido = c1.file_uploader("Tu tabla de rutas", type=["csv"])
     c2.download_button("Plantilla por ciudades",
-                       PLANTILLA_CIUDADES.to_csv(sep=";", index=False).encode("utf-8-sig"),
+                       datos.texto_csv(PLANTILLA_CIUDADES),
                        "plantilla_ciudades.csv", "text/csv", width="stretch",
                        icon=":material/download:")
     c3.download_button("Plantilla por tramos",
-                       PLANTILLA_TRAMOS.to_csv(sep=";", index=False).encode("utf-8-sig"),
+                       datos.texto_csv(PLANTILLA_TRAMOS),
                        "plantilla_tramos.csv", "text/csv", width="stretch",
                        icon=":material/download:")
-    st.caption("Dos formatos. **origen;destino;viajes_semana** resuelve el trayecto sobre los "
-               "corredores. El formato de tramos (provincia, carretera, PK, IMD, tipo de vía) "
-               "ejecuta el modelo sobre tus propios datos.")
+    st.caption("Dos formatos, los dos con **coma** de separador. **origen, destino, paso, "
+               "viajes_semana** resuelve el trayecto sobre los corredores; `paso` es opcional "
+               "y obliga a que la ruta atraviese esa ciudad. El formato de tramos (provincia, "
+               "carretera, PK, IMD, tipo de vía) ejecuta el modelo sobre tus propios datos. "
+               "Puedes reordenar columnas, añadir las tuyas, quitar `paso` o `viajes_semana` "
+               "y guardar desde Excel: el lector admite coma o punto y coma y decimales con "
+               "coma.")
 
 ui.panel_info(
     "La ruta que sale de un origen y un destino es la mejor que se puede armar con las "
@@ -268,29 +280,33 @@ ui.panel_info(
 with st.expander(f"Las {len(datos.ciudades_red())} ciudades que puedes escribir"):
     st.write(", ".join(datos.ciudades_red()) + ".")
     st.caption("Son los hitos de los corredores. Si escribes otra cosa, la fila te lo dice y "
-               "te propone la más parecida.")
+               "te propone la más parecida. Sirven igual para `origen`, `destino` y `paso`: "
+               "por ejemplo Madrid → Sevilla con paso en Córdoba deja solo las rutas que "
+               "pasan por allí.")
 
 tabla = PLANTILLA_CIUDADES.copy()
 if subido is not None:
-    try:
-        tabla = pd.read_csv(subido, sep=None, engine="python")
-    except Exception:
-        ui.panel_info("No se ha podido leer el archivo. Usa CSV y conserva los encabezados de "
-                      "una de las dos plantillas.", aviso=True, etiqueta="Archivo no válido")
+    tabla, fallo = datos.leer_tabla_csv(subido)
+    if fallo:
+        ui.panel_info(fallo, aviso=True, etiqueta="Archivo no válido")
         st.stop()
-    tabla.columns = [str(c).strip().lower() for c in tabla.columns]
 
 por_ciudades = {"origen", "destino"} <= set(tabla.columns)
 por_tramos = {"carretera", "pk_inicio", "pk_fin"} <= set(tabla.columns)
 if not por_ciudades and not por_tramos:
-    ui.panel_info("El archivo no tiene ni las columnas **origen** y **destino** ni las del "
-                  "formato de tramos. Descarga una plantilla y conserva sus encabezados.",
-                  aviso=True, etiqueta="Formato no reconocido")
+    ui.panel_info(
+        "El archivo no tiene ni las columnas **origen** y **destino** ni las del formato de "
+        "tramos. Encabezados encontrados: "
+        + ", ".join(f"`{c}`" for c in tabla.columns) + ". Descarga una plantilla y conserva "
+        "sus encabezados.", aviso=True, etiqueta="Formato no reconocido")
     st.stop()
 
+tabla = datos.numerizar(tabla)
 if "viajes_semana" not in tabla.columns:
     tabla["viajes_semana"] = 1
 viajes = pd.to_numeric(tabla["viajes_semana"], errors="coerce").fillna(1)
+if por_ciudades and "paso" not in tabla.columns:
+    tabla["paso"] = ""
 
 if por_ciudades:
     criterio = st.selectbox("Ordenar por", list(ORDENES))
@@ -299,8 +315,10 @@ if por_ciudades:
 
     filas, avisos = [], []
     for posicion, fila in enumerate(tabla.itertuples()):
-        resultado = datos.resolver_trayecto(fila.origen, fila.destino)
+        resultado = datos.resolver_trayecto(fila.origen, fila.destino,
+                                            paso=getattr(fila, "paso", None))
         salida = {"Trayecto": f"{resultado['origen']} → {resultado['destino']}",
+                  "forzado": resultado.get("paso") or "",
                   "viajes": float(viajes.iloc[posicion]), "Estado": resultado["estado"]}
         if resultado["estado"] == "Ciudad no reconocida":
             salida["Trayecto"] = f"{fila.origen} → {fila.destino}"
@@ -315,13 +333,13 @@ if por_ciudades:
                 "exposicion": ruta["indice"] * float(viajes.iloc[posicion]),
                 "Alternativa": (f"{' + '.join(alterna['vias'])} · índice "
                                 f"{alterna['indice']:.0f}") if alterna else "—",
-                "Ventaja": (f"{alterna['indice'] - ruta['indice']:.0f} puntos"
+                "Ventaja": (_puntos(alterna["indice"] - ruta["indice"])
                             if alterna else "—"),
                 "cobertura": ruta["cobertura"]})
         filas.append(salida)
 
     resultados = pd.DataFrame(filas)
-    for columna in ("Ruta", "paso", "Alternativa", "Ventaja"):
+    for columna in ("Ruta", "paso", "forzado", "Alternativa", "Ventaja"):
         if columna not in resultados:
             resultados[columna] = "—"
     for columna in ("indice", "Km", "exposicion", "cobertura"):
@@ -345,6 +363,7 @@ if por_ciudades:
 
     ui.tabla(resultados, [
         ui.columna("Trayecto", "Trayecto", "fuerte", secundario="paso"),
+        ui.columna("forzado", "Paso obligado", "suave"),
         ui.columna("Ruta", "Ruta recomendada"),
         ui.columna("indice", "Índice", "num"),
         ui.columna("Km", "Km", "num"),
@@ -361,7 +380,7 @@ if por_ciudades:
     descarga["fecha_calculo"] = date.today().isoformat()
     st.download_button(
         "Descargar resultados",
-        descarga.to_csv(sep=";", decimal=",", index=False).encode("utf-8-sig"),
+        datos.texto_csv(descarga),
         f"baliza_rutas_{date.today():%Y-%m-%d}.csv", "text/csv",
         icon=":material/download:", on_click="ignore")
 
@@ -433,7 +452,7 @@ else:
     })
     st.download_button(
         "Descargar resultados",
-        descarga.to_csv(sep=";", decimal=",", index=False).encode("utf-8-sig"),
+        datos.texto_csv(descarga),
         f"baliza_tramos_{date.today():%Y-%m-%d}.csv", "text/csv",
         icon=":material/download:", on_click="ignore")
 
@@ -462,6 +481,15 @@ with st.expander("Cómo calculamos este indicador"):
         "los rodeos. Los corredores son los de `corredores.json`, ampliados en "
         "`corredores_extra.json` con hitos deducidos del propio fichero de tramos: el primer y "
         "el último kilómetro aforado de cada carretera, y los cambios de provincia.")
+    st.markdown(
+        "**Paso obligado.** La columna `paso` del CSV deja solo las rutas que atraviesan esa "
+        "ciudad. Se comprueba de verdad, no por los enlaces: la A-4 pasa por Córdoba sin "
+        "cambiar de carretera, y aun así Madrid → Sevilla con paso en Córdoba la encuentra.")
+    st.markdown(
+        "**Formato de los ficheros.** Todo lo que la página descarga sale con coma de "
+        "separador y punto decimal. Al leer se admite coma, punto y coma o tabulador, "
+        "decimales con coma o con punto, acentos en UTF-8 o en Windows, y los encabezados en "
+        "cualquier orden y en mayúsculas o minúsculas.")
     st.markdown(
         "**Qué no puede hacer.** Solo une ciudades que son hito de algún corredor, y solo por "
         "carreteras medidas. Cuando el enlace real entre dos ciudades no está en la red "
