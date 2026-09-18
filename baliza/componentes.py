@@ -58,15 +58,19 @@ def imagen_portada(url: str, texto_alternativo: str) -> None:
     _pintar(f'<img class="bz-portada" src="{_e(url)}" alt="{_e(texto_alternativo)}">')
 
 
-def imagen(url: str, texto_alternativo: str) -> None:
+def imagen(url: str, texto_alternativo: str, alto_maximo: int | None = None) -> None:
     """Imagen que ocupa el ancho disponible y conserva su proporcion.
 
     Se sirve por HTML y no con st.image porque este ultimo mide el hueco con un
     observador de tamano y, dentro de un contenedor con clave, a veces mide antes
     de que el layout se asiente y deja la imagen en 15 px. La foto de portada
-    lleva siempre esta via y nunca ha fallado."""
+    lleva siempre esta via y nunca ha fallado.
+
+    `alto_maximo` limita la altura sin deformar la imagen: se encoge y se centra.
+    Sirve para cuadrar la altura de dos columnas cuando una la manda el texto."""
+    tope = (f"max-height:{int(alto_maximo)}px;margin:0 auto;" if alto_maximo else "")
     _pintar(f'<img src="{_e(url)}" alt="{_e(texto_alternativo)}" '
-            'style="display:block;width:100%;height:auto">')
+            f'style="display:block;width:100%;height:auto;object-fit:contain;{tope}">')
 
 
 def filtros(clave: str = "filtros"):

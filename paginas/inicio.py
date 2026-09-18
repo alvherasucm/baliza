@@ -32,19 +32,35 @@ ui.imagen_portada(estilo.PORTADA_URL,
 # a la izquierda y la prueba a la derecha. El mapa entra en un contenedor de
 # grafico para que tenga la misma superficie, borde y aire que el resto de piezas
 # visuales de la app, en vez de flotar suelto sobre el fondo.
+# Tope de altura del mapa, calibrado para que con el desplegable abierto las dos
+# columnas acaben a la misma altura.
+ALTO_MAPA = 268
+
 st.write("")
-tesis, mapa = st.columns([1, 1.25], gap="medium", vertical_alignment="top")
+tesis, mapa = st.columns([1.2, 1], gap="medium", vertical_alignment="top")
 with tesis:
     ui.rejilla([ui.tarjeta_destacada(
         "La concentración",
         f"{concentracion * 10:.0f} de cada 10 accidentes ocurren en el "
         f"{estilo.pct(0.10)} de los tramos",
     )], plantilla="1fr")
+    # El desplegable vive aqui y no al final de la pagina: relleno el hueco que
+    # dejaba la tarjeta, que es mucho mas baja que el mapa. Abierto, las dos
+    # columnas quedan a la misma altura.
+    with st.expander("Qué cubre Baliza"):
+        st.markdown(
+            "Baliza cubre la Red de Carreteras del Estado, que es interurbana: no incluye "
+            "calles ni carreteras autonómicas. Es solo una parte de la red, pero en ella "
+            "muere uno de cada cuatro fallecidos del país. Tampoco entran Baleares, Canarias "
+            "ni las carreteras forales de Navarra y el País Vasco, porque el Estado no mide "
+            "su tráfico. De Navarra solo entra la AP-68, que sí es del Estado.")
 with mapa:
     with ui.contenedor_grafico("mapa_concentracion"):
+        # El tope de altura cuadra el mapa con la columna de la izquierda cuando el
+        # desplegable esta abierto: la imagen se encoge y se centra, no se recorta.
         ui.imagen(estilo.MAPA_CONCENTRACION,
                   "Mapa de la Red de Carreteras del Estado con el 10 % de tramos de mayor "
-                  "siniestralidad resaltados en rojo")
+                  "siniestralidad resaltados en rojo", alto_maximo=ALTO_MAPA)
         st.caption(
             f"Red de Carreteras del Estado en {datos.ANIO}. En rojo, el "
             f"{estilo.pct(0.10)} de tramos con más accidentes; en gris, el resto de la red "
@@ -74,12 +90,3 @@ for fila in range(0, len(MODULOS), 4):
             else:
                 st.markdown(f"**{clave}**")
             st.caption(texto)
-
-st.write("")
-with st.expander("Qué cubre Baliza"):
-    st.markdown(
-        "Baliza cubre la Red de Carreteras del Estado, que es interurbana: no incluye calles "
-        "ni carreteras autonómicas. Es solo una parte de la red, pero en ella muere uno de cada "
-        "cuatro fallecidos del país. Tampoco entran Baleares, Canarias ni las carreteras forales "
-        "de Navarra y el País Vasco, porque el Estado no mide su tráfico. De Navarra solo entra "
-        "la AP-68, que sí es del Estado.")
